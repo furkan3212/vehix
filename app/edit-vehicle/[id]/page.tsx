@@ -28,7 +28,8 @@ export default function EditVehiclePage() {
   const [color, setColor] = useState("");
   const [nickname, setNickname] =
     useState("");
-
+  const [phone, setPhone] = useState("");
+const [whatsapp, setWhatsapp] = useState("");
   const [loading, setLoading] =
     useState(true);
 
@@ -62,6 +63,8 @@ export default function EditVehiclePage() {
       setYear(vehicle.year.toString());
       setColor(vehicle.color);
       setNickname(vehicle.nickname ?? "");
+      setPhone(vehicle.phone ?? "");
+setWhatsapp(vehicle.whatsapp ?? "");
     } finally {
       setLoading(false);
     }
@@ -98,15 +101,16 @@ export default function EditVehiclePage() {
       setSaving(true);
 
       const result =
-        await updateVehicle(vehicleId, {
-          brand: brand.trim(),
-          model: model.trim(),
-          vehicle_number:
-            vehicleNumber.toUpperCase().trim(),
-          year: Number(year),
-          color: color.trim(),
-          nickname: nickname.trim(),
-        });
+       await updateVehicle(vehicleId, {
+  brand: brand.trim(),
+  model: model.trim(),
+  vehicle_number: vehicleNumber.trim(),
+  year: Number(year),
+  color: color.trim(),
+  nickname: nickname.trim(),
+  phone: phone.trim(),
+  whatsapp: whatsapp.trim(),
+});
 
       if (!result.success) {
         setError(
@@ -278,6 +282,31 @@ export default function EditVehiclePage() {
               className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 outline-none transition focus:border-blue-500"
             />
           </div>
+          <div>
+  <label className="mb-2 block text-sm font-medium">
+    Phone Number *
+  </label>
+
+  <input
+    type="tel"
+    value={phone}
+    onChange={(e) => setPhone(e.target.value)}
+    className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 outline-none transition focus:border-blue-500"
+  />
+</div>
+
+<div>
+  <label className="mb-2 block text-sm font-medium">
+    WhatsApp Number *
+  </label>
+
+  <input
+    type="tel"
+    value={whatsapp}
+    onChange={(e) => setWhatsapp(e.target.value)}
+    className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 outline-none transition focus:border-blue-500"
+  />
+</div>
           {error && (
             <div className="rounded-xl border border-red-500 bg-red-500/10 px-4 py-3 text-sm text-red-400">
               {error}
