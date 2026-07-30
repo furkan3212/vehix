@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Hero() {
   return (
     <section className="bg-[#0B0B0F] text-white">
@@ -19,15 +21,19 @@ export default function Hero() {
 
           <p className="text-gray-400 text-lg mt-8 leading-8">
             Vehix allows anyone to securely contact your vehicle,
-            save your parking location, receive maintenance reminders,
+            save your parking location,
+            receive maintenance reminders,
             and protect your privacy using a smart QR identity.
           </p>
 
           <div className="mt-10 flex gap-5">
 
-            <button className="bg-blue-600 hover:bg-blue-700 px-7 py-4 rounded-xl font-semibold transition">
-              Get Your Vehix ➡
-            </button>
+            <Link
+              href="/register"
+              className="bg-blue-600 hover:bg-blue-700 px-7 py-4 rounded-xl font-semibold transition"
+            >
+              Get Your Vehix ➜
+            </Link>
 
             <button className="border border-gray-700 px-7 py-4 rounded-xl hover:border-blue-500 transition">
               Watch Demo
@@ -59,13 +65,9 @@ export default function Hero() {
             </button>
 
             <div className="mt-8 space-y-3 text-sm text-gray-400">
-
               <p>✅ Privacy Protected</p>
-
               <p>✅ Smart Parking</p>
-
               <p>✅ Emergency Ready</p>
-
             </div>
 
           </div>
