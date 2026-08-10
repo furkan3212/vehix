@@ -1,20 +1,26 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
-import WhyVehix from "@/components/WhyVehix";
-import HowItWorks from "@/components/HowItWorks";
 import Stats from "@/components/Stats";
+import WhyVehix from "@/components/WhyVehix";
+import StickerStore from "@/components/StickerStore";
+{/*import Features from "@/components/Features";*/}
+import HowItWorks from "@/components/HowItWorks";
 import Testimonials from "@/components/Testimonials";
+{/*import FAQ from "@/components/FAQ";*/}
 import Footer from "@/components/Footer";
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <main className="bg-[#0B0B0F] min-h-screen">
+    <main className="bg-[#030712] text-white overflow-x-hidden">
       <Navbar />
       <Hero />
-      <WhyVehix />
-      <HowItWorks />
       <Stats />
+      <WhyVehix />
+      {/* <Features /> */}
+      <HowItWorks />
+      <StickerStore />
       <Testimonials />
+     
       <Footer />
     </main>
   );
