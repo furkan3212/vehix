@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -16,9 +16,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import {
-  createOrder,
-} from "@/services/orders";
+import { createOrder } from "@/services/orders";
 
 type ProductId =
   | "basic"
@@ -40,20 +38,14 @@ const products = {
   },
 };
 
-const shapeExtra: Record<
-  string,
-  number
-> = {
+const shapeExtra: Record<string, number> = {
   Round: 0,
   Square: 0,
   Hexagon: 30,
   Shield: 40,
 };
 
-const finishExtra: Record<
-  string,
-  number
-> = {
+const finishExtra: Record<string, number> = {
   Matte: 0,
   Gloss: 30,
   Reflective: 50,
@@ -84,7 +76,7 @@ function safeProduct(
 
 function safeQuantity(
   value: string | null
-) {
+): number {
   const number = Number(value);
 
   if (!Number.isFinite(number)) {
@@ -97,11 +89,16 @@ function safeQuantity(
   );
 }
 
-export default function CheckoutPage() {
+/**
+ * Checkout content.
+ *
+ * This component uses useSearchParams(), so it is
+ * rendered inside Suspense by the page component below.
+ */
+function CheckoutContent() {
   const router = useRouter();
 
-  const searchParams =
-    useSearchParams();
+  const searchParams = useSearchParams();
 
   const productId = safeProduct(
     searchParams.get("product")
@@ -214,8 +211,7 @@ export default function CheckoutPage() {
     }
 
     if (
-      pincode.replace(/\D/g, "").length !==
-      6
+      pincode.replace(/\D/g, "").length !== 6
     ) {
       setError(
         "Please enter a valid 6-digit PIN code."
@@ -590,8 +586,7 @@ export default function CheckoutPage() {
                         ? "rounded-full"
                         : shape === "Square"
                         ? "rounded-2xl"
-                        : shape ===
-                          "Hexagon"
+                        : shape === "Hexagon"
                         ? "rounded-[28px]"
                         : "rounded-[30px_30px_40px_40px]"
                     }`}
@@ -712,5 +707,31 @@ export default function CheckoutPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+/**
+ * Production-safe checkout page.
+ *
+ * Next.js requires useSearchParams() to be
+ * inside a Suspense boundary.
+ */
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[#030712] text-white">
+          <div className="text-center">
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-blue-500" />
+
+            <p className="mt-4 text-sm text-zinc-500">
+              Loading checkout...
+            </p>
+          </div>
+        </main>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
   );
 }
