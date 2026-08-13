@@ -32,9 +32,14 @@ export default function ViewVehiclePage() {
 
   const [deleting, setDeleting] =
     useState(false);
-    async function loadVehicle() {
+
+  const [error, setError] =
+    useState("");
+
+  async function loadVehicle() {
     try {
       setLoading(true);
+      setError("");
 
       const result =
         await getVehicle(vehicleId);
@@ -45,6 +50,10 @@ export default function ViewVehiclePage() {
       }
 
       setVehicle(result.data);
+    } catch {
+      setError(
+        "Unable to load vehicle."
+      );
     } finally {
       setLoading(false);
     }
@@ -57,20 +66,35 @@ export default function ViewVehiclePage() {
   }, [vehicleId]);
 
   async function handleDelete() {
-    if (!vehicle) return;
+    if (!vehicle || deleting) return;
 
     const confirmDelete = window.confirm(
-      "Delete this vehicle?"
+      `Are you sure you want to delete ${vehicle.vehicle_number}? This action cannot be undone.`
     );
 
     if (!confirmDelete) return;
 
     try {
       setDeleting(true);
+      setError("");
 
-      await deleteVehicle(vehicle.id);
+      const result =
+        await deleteVehicle(vehicle.id);
+
+      if (!result.success) {
+        setError(
+          result.error ||
+            "Failed to delete vehicle."
+        );
+        return;
+      }
 
       router.replace("/dashboard");
+      router.refresh();
+    } catch {
+      setError(
+        "Something went wrong while deleting the vehicle."
+      );
     } finally {
       setDeleting(false);
     }
@@ -78,23 +102,22 @@ export default function ViewVehiclePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black flex items-center justify-center">
-
+      <main className="flex min-h-screen items-center justify-center bg-black">
         <div className="text-center">
-
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
 
           <p className="mt-5 text-zinc-400">
             Loading Vehicle...
           </p>
-
         </div>
-
       </main>
     );
   }
 
-  if (!vehicle) return null;
+  if (!vehicle) {
+    return null;
+  }
+
   return (
     <main className="min-h-screen bg-black text-white">
       <div className="mx-auto max-w-5xl px-6 py-8">
@@ -102,9 +125,7 @@ export default function ViewVehiclePage() {
         {/* Header */}
 
         <div className="mb-10 flex items-center justify-between">
-
           <div>
-
             <button
               onClick={() => router.back()}
               className="mb-5 flex items-center gap-2 text-zinc-400 transition hover:text-white"
@@ -118,15 +139,14 @@ export default function ViewVehiclePage() {
             </h1>
 
             <p className="mt-2 text-zinc-500">
-              View complete information about your vehicle.
+              View complete information about
+              your vehicle.
             </p>
-
           </div>
 
           <div className="rounded-full bg-red-600 p-4">
             <Car size={30} />
           </div>
-
         </div>
 
         {/* Vehicle Card */}
@@ -134,7 +154,6 @@ export default function ViewVehiclePage() {
         <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-8">
 
           <div className="mb-8 border-b border-zinc-800 pb-6">
-
             <h2 className="text-3xl font-bold">
               {vehicle.brand}
             </h2>
@@ -143,7 +162,14 @@ export default function ViewVehiclePage() {
               {vehicle.model}
             </p>
 
+            {vehicle.nickname && (
+              <p className="mt-1 text-sm text-zinc-500">
+                "{vehicle.nickname}"
+              </p>
+            )}
           </div>
+
+          {/* Vehicle Information */}
 
           <div className="grid gap-6 md:grid-cols-2">
 
@@ -187,12 +213,45 @@ export default function ViewVehiclePage() {
               </p>
             </div>
 
+            <div>
+              <p className="text-sm text-zinc-500">
+                Phone
+              </p>
+
+              <p className="mt-2 text-xl font-semibold">
+                {vehicle.phone || "—"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm text-zinc-500">
+                WhatsApp
+              </p>
+
+              <p className="mt-2 text-xl font-semibold">
+                {vehicle.whatsapp || "—"}
+              </p>
+            </div>
+
           </div>
+
+          {/* Error */}
+
+          {error && (
+            <div className="mt-8 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
+
+          {/* Actions */}
+
           <div className="mt-10 grid gap-4 md:grid-cols-3">
 
             <button
               onClick={() =>
-                router.push('/edit-vehicle/${vehicle.id}')
+                router.push(
+                  `/edit-vehicle/${vehicle.id}`
+                )
               }
               className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 font-semibold transition hover:bg-blue-700"
             >
@@ -202,7 +261,9 @@ export default function ViewVehiclePage() {
 
             <button
               onClick={() =>
-                router.push('/vehicle/${vehicle.id}/qr')
+                router.push(
+                  `/vehicle/${vehicle.id}/qr`
+                )
               }
               className="flex items-center justify-center gap-2 rounded-xl bg-green-600 py-3 font-semibold transition hover:bg-green-700"
             >
@@ -225,7 +286,6 @@ export default function ViewVehiclePage() {
           </div>
 
         </div>
-
       </div>
     </main>
   );

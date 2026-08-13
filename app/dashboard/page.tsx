@@ -1,1086 +1,1092 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import {
   Car,
   Plus,
-  QrCode,
+  User,
   MapPin,
-  Shield,
-  Wrench,
   FileText,
   Bell,
+  BellRing,
+  Eye,
+  Pencil,
+  Trash2,
   ArrowRight,
-  Sparkles,
   LogOut,
+  ShieldCheck,
+  AlertTriangle,
+  Lightbulb,
+  DoorOpen,
+  Ban,
+  Siren,
+  Loader2,
+  CheckCircle2,
+  RefreshCw,
 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
-import { getVehicles } from "@/services/vehicle";
+
+import {
+  getVehicles,
+  deleteVehicle,
+} from "@/services/vehicle";
+
+import {
+  getOwnerAlerts,
+  markAlertAsRead,
+  type VehicleAlert,
+} from "@/services/alerts";
+
 import { Vehicle } from "@/types/vehicle";
+
+type AlertDisplay = {
+  title: string;
+  description: string;
+  icon: typeof Lightbulb;
+};
+
+const alertDisplay: Record<
+  VehicleAlert["alert_type"],
+  AlertDisplay
+> = {
+  lights: {
+    title: "Lights Left On",
+    description:
+      "Someone reported that your vehicle lights may be on.",
+    icon: Lightbulb,
+  },
+
+  doors: {
+    title: "Doors Open",
+    description:
+      "Someone reported that a vehicle door may be open.",
+    icon: DoorOpen,
+  },
+
+  parking: {
+    title: "Blocked Parking",
+    description:
+      "Someone reported that your vehicle may be blocking another vehicle.",
+    icon: Ban,
+  },
+
+  emergency: {
+    title: "Emergency",
+    description:
+      "Someone reported an emergency involving your vehicle.",
+    icon: Siren,
+  },
+};
 
 export default function DashboardPage() {
   const router = useRouter();
 
-  const [loading, setLoading] = useState(true);
+  const [vehicles, setVehicles] =
+    useState<Vehicle[]>([]);
 
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [alerts, setAlerts] =
+    useState<VehicleAlert[]>([]);
 
-  const [userName, setUserName] = useState("Owner");
+  const [loading, setLoading] =
+    useState(true);
 
-  async function loadDashboard() {
-    setLoading(true);
+  const [alertsLoading, setAlertsLoading] =
+    useState(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const [error, setError] =
+    useState("");
 
-    if (!user) {
-      router.push("/login");
-      return;
-    }
+  const [alertError, setAlertError] =
+    useState("");
 
-    if (user.user_metadata?.full_name) {
-      setUserName(user.user_metadata.full_name);
-    }
+  const [deletingId, setDeletingId] =
+    useState<string | null>(null);
 
-    const result = await getVehicles();
+  const [markingId, setMarkingId] =
+    useState<string | null>(null);
 
-    if (result.success && result.data) {
-      setVehicles(result.data);
-    }
-
-    setLoading(false);
-  }
+  const [userName, setUserName] =
+    useState("");
 
   useEffect(() => {
     loadDashboard();
   }, []);
 
-  async function logout() {
-    await supabase.auth.signOut();
-    router.push("/");
+  async function loadDashboard() {
+    await Promise.all([
+      loadVehicles(),
+      loadAlerts(),
+      loadUser(),
+    ]);
+
+    setLoading(false);
   }
+
+  async function loadUser() {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      const name =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email?.split("@")[0] ||
+        "User";
+
+      setUserName(name);
+    } catch (err) {
+      console.error(
+        "Failed to load user:",
+        err
+      );
+    }
+  }
+
+  async function loadVehicles() {
+    try {
+      setError("");
+
+      const result =
+        await getVehicles();
+
+      if (!result.success) {
+        setError(
+          result.error ??
+            "Failed to load vehicles."
+        );
+
+        return;
+      }
+
+      setVehicles(result.data ?? []);
+    } catch (err) {
+      console.error(
+        "Load vehicles error:",
+        err
+      );
+
+      setError(
+        "Unable to load your vehicles."
+      );
+    }
+  }
+
+  async function loadAlerts() {
+    try {
+      setAlertsLoading(true);
+      setAlertError("");
+
+      const result =
+        await getOwnerAlerts();
+
+      if (!result.success) {
+        setAlertError(
+          result.error ??
+            "Failed to load alerts."
+        );
+
+        return;
+      }
+
+      setAlerts(result.data ?? []);
+    } catch (err) {
+      console.error(
+        "Load alerts error:",
+        err
+      );
+
+      setAlertError(
+        "Unable to load alerts."
+      );
+    } finally {
+      setAlertsLoading(false);
+    }
+  }
+
+  async function handleDelete(
+    vehicle: Vehicle
+  ) {
+    const confirmed =
+      window.confirm(
+        `Delete ${vehicle.vehicle_number}? This action cannot be undone.`
+      );
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(vehicle.id);
+
+      const { error } =
+        await supabase
+          .from("vehicles")
+          .delete()
+          .eq("id", vehicle.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setVehicles((current) =>
+        current.filter(
+          (item) =>
+            item.id !== vehicle.id
+        )
+      );
+    } catch (err) {
+      console.error(
+        "Delete vehicle error:",
+        err
+      );
+
+      window.alert(
+        "Unable to delete this vehicle."
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleMarkRead(
+    alert: VehicleAlert
+  ) {
+    try {
+      setMarkingId(alert.id);
+
+      const result =
+        await markAlertAsRead(alert.id);
+
+      if (!result.success) {
+        window.alert(
+          result.error ??
+            "Unable to mark alert as read."
+        );
+
+        return;
+      }
+
+      setAlerts((current) =>
+        current.map((item) =>
+          item.id === alert.id
+            ? {
+                ...item,
+                status: "read",
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      console.error(
+        "Mark alert read error:",
+        err
+      );
+    } finally {
+      setMarkingId(null);
+    }
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+
+    router.replace("/login");
+  }
+
+  const unreadAlerts =
+    alerts.filter(
+      (alert) =>
+        alert.status !== "read"
+    ).length;
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-black">
+      <main className="flex min-h-screen items-center justify-center bg-[#030712] text-white">
         <div className="text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/10">
+            <Loader2
+              size={28}
+              className="animate-spin text-blue-400"
+            />
+          </div>
 
-          <div className="mx-auto h-14 w-14 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-
-          <p className="mt-6 text-lg text-zinc-400">
-            Loading Dashboard...
+          <p className="mt-5 text-sm text-zinc-500">
+            Loading your dashboard...
           </p>
-
         </div>
       </main>
     );
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white">
-
+    <main className="min-h-screen overflow-x-hidden bg-[#030712] text-white">
       {/* Background */}
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute left-[-200px] top-[-200px] h-[500px] w-[500px] rounded-full bg-blue-600/10 blur-[180px]" />
 
-      <div className="absolute inset-0">
-
-        <div className="absolute -left-32 top-10 h-96 w-96 rounded-full bg-blue-600/20 blur-[130px]" />
-
-        <div className="absolute right-0 top-0 h-[500px] w-[500px] rounded-full bg-blue-700/10 blur-[170px]" />
-
-        <div className="absolute bottom-0 left-1/2 h-[350px] w-[350px] -translate-x-1/2 rounded-full bg-cyan-500/10 blur-[140px]" />
-
+        <div className="absolute bottom-[-200px] right-[-200px] h-[500px] w-[500px] rounded-full bg-cyan-500/10 blur-[180px]" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-7xl px-6 py-10">
+      <div className="relative">
+        {/* Header */}
+        <header className="sticky top-0 z-40 border-b border-white/10 bg-[#030712]/80 backdrop-blur-2xl">
+          <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+            <button
+              type="button"
+              onClick={() =>
+                router.push("/dashboard")
+              }
+              className="flex items-center gap-3"
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-lg shadow-blue-600/20">
+                <Car size={23} />
+              </div>
 
-        {/* Hero */}
-
-        <div className="overflow-hidden rounded-[34px] border border-white/10 bg-white/5 backdrop-blur-2xl">
-
-          <div className="relative overflow-hidden p-8 md:p-12">
-
-            <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-blue-600/20 blur-[120px]" />
-
-            <div className="relative flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-
-              <div>
-
-                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-4 py-2">
-
-                  <Sparkles size={16} className="text-blue-400" />
-
-                  <span className="text-sm text-blue-300">
-                    Smart Vehicle Identity Network
-                  </span>
-
-                </div>
-
-                <h1 className="text-4xl font-black leading-tight md:text-6xl">
-
-                  Welcome Back,
-
-                  <br />
-
-                  <span className="bg-gradient-to-r from-white to-blue-400 bg-clip-text text-transparent">
-                    {userName}
-                  </span>
-
-                </h1>
-
-                <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-400">
-
-                  Manage your vehicles, QR identities, parking,
-                  documents and maintenance from one premium dashboard.
-
+              <div className="text-left">
+                <p className="font-black tracking-[0.25em]">
+                  VEHIX
                 </p>
 
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
+                  Smart Vehicle Identity
+                </p>
+              </div>
+            </button>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    "/dashboard/profile"
+                  )
+                }
+                className="hidden items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold transition hover:bg-white/10 sm:flex"
+              >
+                <User size={17} />
+                Profile
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/10"
+              >
+                <LogOut size={17} />
+                <span className="hidden sm:inline">
+                  Logout
+                </span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div className="mx-auto max-w-7xl px-6 py-10 md:py-12">
+          {/* Welcome */}
+          <section className="mb-10">
+            <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+              <div>
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-green-400">
+                  <ShieldCheck size={14} />
+                  Account Active
+                </div>
+
+                <h1 className="text-4xl font-black tracking-tight md:text-5xl">
+                  Welcome back
+                  {userName
+                    ? `, ${userName}`
+                    : ""}
+                  .
+                </h1>
+
+                <p className="mt-3 max-w-2xl text-zinc-500">
+                  Manage your vehicles, alerts,
+                  documents and smart vehicle identity
+                  from one place.
+                </p>
               </div>
 
               <button
-                onClick={logout}
-                className="flex items-center justify-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-6 py-4 transition hover:scale-105 hover:bg-red-500/20"
+                type="button"
+                onClick={() =>
+                  router.push(
+                    "/add-vehicle"
+                  )
+                }
+                className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-4 font-bold shadow-lg shadow-blue-600/20 transition hover:scale-[1.02]"
               >
-                <LogOut size={20} />
-
-                Logout
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* Stats Section Starts Below */}
-                <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-
-          {/* Vehicles */}
-
-          <div className="group rounded-[30px] border border-white/10 bg-white/5 p-7 backdrop-blur-2xl transition duration-300 hover:-translate-y-2 hover:border-blue-500/40">
-
-            <div className="flex items-center justify-between">
-
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600/20">
-
-                <Car className="text-blue-400" size={32} />
-
-              </div>
-
-              <ArrowRight
-                className="text-zinc-600 transition group-hover:translate-x-1 group-hover:text-blue-400"
-                size={22}
-              />
-
-            </div>
-
-            <h2 className="mt-8 text-5xl font-black">
-
-              {vehicles.length}
-
-            </h2>
-
-            <p className="mt-3 text-zinc-400">
-              Registered Vehicles
-            </p>
-
-          </div>
-
-          {/* QR */}
-
-          <div className="group rounded-[30px] border border-white/10 bg-white/5 p-7 backdrop-blur-2xl transition duration-300 hover:-translate-y-2 hover:border-cyan-500/40">
-
-            <div className="flex items-center justify-between">
-
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-500/20">
-
-                <QrCode
-                  className="text-cyan-400"
-                  size={32}
-                />
-
-              </div>
-
-              <ArrowRight
-                className="text-zinc-600 transition group-hover:translate-x-1 group-hover:text-cyan-400"
-                size={22}
-              />
-
-            </div>
-
-            <h2 className="mt-8 text-5xl font-black">
-
-              {vehicles.length}
-
-            </h2>
-
-            <p className="mt-3 text-zinc-400">
-
-              Active QR Tags
-
-            </p>
-
-          </div>
-
-          {/* Parking */}
-
-          <div className="group rounded-[30px] border border-white/10 bg-white/5 p-7 backdrop-blur-2xl transition duration-300 hover:-translate-y-2 hover:border-green-500/40">
-
-            <div className="flex items-center justify-between">
-
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-green-500/20">
-
-                <MapPin
-                  className="text-green-400"
-                  size={32}
-                />
-
-              </div>
-
-              <ArrowRight
-                className="text-zinc-600 transition group-hover:translate-x-1 group-hover:text-green-400"
-                size={22}
-              />
-
-            </div>
-
-            <h2 className="mt-8 text-5xl font-black">
-
-              --
-
-            </h2>
-
-            <p className="mt-3 text-zinc-400">
-
-              Saved Parking
-
-            </p>
-
-          </div>
-
-          {/* Security */}
-
-          <div className="group rounded-[30px] border border-white/10 bg-white/5 p-7 backdrop-blur-2xl transition duration-300 hover:-translate-y-2 hover:border-purple-500/40">
-
-            <div className="flex items-center justify-between">
-
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-500/20">
-
-                <Shield
-                  className="text-purple-400"
-                  size={32}
-                />
-
-              </div>
-
-              <ArrowRight
-                className="text-zinc-600 transition group-hover:translate-x-1 group-hover:text-purple-400"
-                size={22}
-              />
-
-            </div>
-
-            <h2 className="mt-8 text-5xl font-black">
-
-              100%
-
-            </h2>
-
-            <p className="mt-3 text-zinc-400">
-
-              Security Status
-
-            </p>
-
-          </div>
-
-        </div>
-
-
-
-
-
-        {/* Quick Actions */}
-
-        <div className="mt-12">
-
-          <h2 className="mb-6 text-3xl font-black">
-
-            Quick Actions
-
-          </h2>
-
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-
-            <Link
-              href="/add-vehicle"
-              className="group rounded-[28px] border border-blue-500/20 bg-gradient-to-br from-blue-600 to-blue-800 p-8 transition hover:scale-[1.03]"
-            >
-
-              <Plus size={34} />
-
-              <h3 className="mt-8 text-2xl font-bold">
-
+                <Plus size={20} />
                 Add Vehicle
-
-              </h3>
-
-              <p className="mt-3 text-blue-100">
-
-                Register a new vehicle with Vehix.
-
-              </p>
-
-            </Link>
-
-            <Link
-              href="/dashboard/profile"
-              className="group rounded-[28px] border border-white/10 bg-white/5 p-8 backdrop-blur-xl transition hover:scale-[1.03]"
-            >
-
-              <Shield
-                size={34}
-                className="text-blue-400"
-              />
-
-              <h3 className="mt-8 text-2xl font-bold">
-
-                My Profile
-
-              </h3>
-
-              <p className="mt-3 text-zinc-400">
-
-                Privacy & emergency contacts.
-
-              </p>
-
-            </Link>
-
-            <Link
-              href="/dashboard/settings"
-              className="group rounded-[28px] border border-white/10 bg-white/5 p-8 backdrop-blur-xl transition hover:scale-[1.03]"
-            >
-
-              <Wrench
-                size={34}
-                className="text-orange-400"
-              />
-
-              <h3 className="mt-8 text-2xl font-bold">
-
-                Settings
-
-              </h3>
-
-              <p className="mt-3 text-zinc-400">
-
-                Personalize your Vehix account.
-
-              </p>
-
-            </Link>
-
-            <Link
-              href="#"
-              className="group rounded-[28px] border border-white/10 bg-white/5 p-8 backdrop-blur-xl transition hover:scale-[1.03]"
-            >
-
-              <Bell
-                size={34}
-                className="text-pink-400"
-              />
-
-              <h3 className="mt-8 text-2xl font-bold">
-
-                Notifications
-
-              </h3>
-
-              <p className="mt-3 text-zinc-400">
-
-                Coming soon...
-
-              </p>
-
-            </Link>
-
-          </div>
-
-        </div>
-                {/* My Vehicles */}
-
-        <div className="mt-14">
-
-          <div className="mb-8 flex items-center justify-between">
-
-            <div>
-
-              <h2 className="text-3xl font-black">
-
-                My Vehicles
-
-              </h2>
-
-              <p className="mt-2 text-zinc-400">
-
-                All vehicles connected to your Vehix account.
-
-              </p>
-
+              </button>
             </div>
+          </section>
 
-            <Link
-              href="/add-vehicle"
-              className="rounded-2xl bg-blue-600 px-5 py-3 font-semibold transition hover:bg-blue-700"
-            >
-              + Add Vehicle
-            </Link>
+          {/* Quick Stats */}
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              icon={Car}
+              title="My Vehicles"
+              value={vehicles.length}
+              description="Registered vehicles"
+            />
 
-          </div>
+            <StatCard
+              icon={BellRing}
+              title="Alerts"
+              value={unreadAlerts}
+              description="Unread notifications"
+              alert={unreadAlerts > 0}
+            />
 
-          {vehicles.length === 0 ? (
+            <StatCard
+              icon={MapPin}
+              title="Location"
+              value="Ready"
+              description="Parking location"
+            />
 
-            <div className="rounded-[32px] border border-dashed border-zinc-700 bg-zinc-900/40 p-16 text-center">
+            <StatCard
+              icon={FileText}
+              title="Documents"
+              value="Secure"
+              description="Private storage"
+            />
+          </section>
 
-              <Car
-                size={60}
-                className="mx-auto text-zinc-600"
-              />
+          {/* Alerts */}
+          <section className="mt-10">
+            <div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <div>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-black">
+                    Vehicle Alerts
+                  </h2>
 
-              <h3 className="mt-6 text-3xl font-bold">
+                  {unreadAlerts > 0 && (
+                    <span className="rounded-full bg-red-500 px-2.5 py-1 text-xs font-black">
+                      {unreadAlerts}
+                    </span>
+                  )}
+                </div>
 
-                No Vehicles Yet
+                <p className="mt-2 text-sm text-zinc-600">
+                  Alerts sent by people who scanned
+                  your Vehix vehicle identity.
+                </p>
+              </div>
 
-              </h3>
-
-              <p className="mt-3 text-zinc-500">
-
-                Register your first vehicle to start using Vehix.
-
-              </p>
-
-              <Link
-                href="/add-vehicle"
-                className="mt-8 inline-flex rounded-xl bg-blue-600 px-6 py-3 font-semibold transition hover:bg-blue-700"
+              <button
+                type="button"
+                onClick={loadAlerts}
+                disabled={alertsLoading}
+                className="flex w-fit items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-zinc-400 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
               >
-                Register Vehicle
-              </Link>
-
+                <RefreshCw
+                  size={16}
+                  className={
+                    alertsLoading
+                      ? "animate-spin"
+                      : ""
+                  }
+                />
+                Refresh
+              </button>
             </div>
 
-          ) : (
+            {alertError && (
+              <div className="mb-5 rounded-2xl border border-red-500/20 bg-red-500/5 p-5 text-sm text-red-400">
+                {alertError}
+              </div>
+            )}
 
-            <div className="grid gap-8">
+            {alertsLoading ? (
+              <div className="flex items-center justify-center rounded-3xl border border-white/10 bg-white/[0.03] p-12">
+                <Loader2
+                  size={24}
+                  className="animate-spin text-blue-400"
+                />
+              </div>
+            ) : alerts.length === 0 ? (
+              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-10 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10">
+                  <Bell
+                    size={26}
+                    className="text-blue-400"
+                  />
+                </div>
 
-              {vehicles.map((vehicle) => (
+                <h3 className="mt-5 text-lg font-black">
+                  No alerts yet
+                </h3>
 
-                <div
-                  key={vehicle.id}
-                  className="overflow-hidden rounded-[32px] border border-white/10 bg-white/5 backdrop-blur-2xl transition duration-300 hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/10"
-                >
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-600">
+                  When someone scans your Vehix QR
+                  and reports an issue, their alert
+                  will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {alerts.map((alert) => {
+                  const display =
+                    alertDisplay[
+                      alert.alert_type
+                    ];
 
-                  <div className="flex flex-col gap-8 p-8 lg:flex-row lg:items-center lg:justify-between">
+                  const Icon =
+                    display.icon;
 
-                    {/* Left */}
+                  const unread =
+                    alert.status !==
+                    "read";
 
-                    <div className="flex items-center gap-6">
-
-                      <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-blue-600/20">
-
-                        <Car
-                          size={40}
-                          className="text-blue-400"
-                        />
-
-                      </div>
-
-                      <div>
-
-                        <div className="flex flex-wrap items-center gap-3">
-
-                          <h3 className="text-3xl font-black">
-
-                            {vehicle.vehicle_number}
-
-                          </h3>
-
-                          <span className="rounded-full bg-green-500/20 px-3 py-1 text-sm font-semibold text-green-400">
-
-                            VERIFIED
-
-                          </span>
-
+                  return (
+                    <div
+                      key={alert.id}
+                      className={`rounded-3xl border p-5 transition ${
+                        unread
+                          ? "border-blue-500/20 bg-blue-500/[0.05]"
+                          : "border-white/10 bg-white/[0.03]"
+                      }`}
+                    >
+                      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                        <div
+                          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+                            unread
+                              ? "bg-blue-500/10"
+                              : "bg-white/5"
+                          }`}
+                        >
+                          <Icon
+                            size={23}
+                            className={
+                              unread
+                                ? "text-blue-400"
+                                : "text-zinc-600"
+                            }
+                          />
                         </div>
 
-                        <p className="mt-2 text-lg text-zinc-400">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="font-black">
+                              {display.title}
+                            </h3>
 
-                          {vehicle.brand} • {vehicle.model}
+                            {unread && (
+                              <span className="rounded-full bg-blue-500/10 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-400">
+                                New
+                              </span>
+                            )}
+                          </div>
 
-                        </p>
+                          <p className="mt-1 text-sm leading-6 text-zinc-500">
+                            {alert.message ||
+                              display.description}
+                          </p>
 
-                        <p className="mt-1 text-zinc-500">
+                          <p className="mt-2 text-xs text-zinc-700">
+                            {formatDate(
+                              alert.created_at
+                            )}
+                          </p>
+                        </div>
 
-                          {vehicle.color}
+                        {unread && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleMarkRead(
+                                alert
+                              )
+                            }
+                            disabled={
+                              markingId ===
+                              alert.id
+                            }
+                            className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-zinc-400 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
+                          >
+                            {markingId ===
+                            alert.id ? (
+                              <Loader2
+                                size={16}
+                                className="animate-spin"
+                              />
+                            ) : (
+                              <CheckCircle2
+                                size={16}
+                              />
+                            )}
 
-                        </p>
+                            Mark Read
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
+          {/* Vehicles */}
+          <section className="mt-12">
+            <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <div>
+                <h2 className="text-2xl font-black">
+                  My Vehicles
+                </h2>
+
+                <p className="mt-2 text-sm text-zinc-600">
+                  Manage your registered Vehix vehicles.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    "/add-vehicle"
+                  )
+                }
+                className="flex w-fit items-center gap-2 text-sm font-semibold text-blue-400 transition hover:text-blue-300"
+              >
+                Add another vehicle
+                <ArrowRight size={16} />
+              </button>
+            </div>
+
+            {error && (
+              <div className="mb-5 rounded-2xl border border-red-500/20 bg-red-500/5 p-5 text-sm text-red-400">
+                {error}
+              </div>
+            )}
+
+            {vehicles.length === 0 ? (
+              <div className="rounded-[32px] border border-dashed border-white/10 bg-white/[0.02] p-12 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/10">
+                  <Car
+                    size={30}
+                    className="text-blue-400"
+                  />
+                </div>
+
+                <h3 className="mt-6 text-xl font-black">
+                  No vehicles yet
+                </h3>
+
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-600">
+                  Add your first vehicle to create
+                  its digital Vehix identity.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      "/add-vehicle"
+                    )
+                  }
+                  className="mt-7 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 font-bold transition hover:bg-blue-700"
+                >
+                  <Plus size={18} />
+                  Add Your First Vehicle
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-5 lg:grid-cols-2">
+                {vehicles.map((vehicle) => (
+                  <div
+                    key={vehicle.id}
+                    className="group overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.035] backdrop-blur-xl transition hover:border-blue-500/20"
+                  >
+                    {/* Vehicle Header */}
+                    <div className="border-b border-white/10 bg-gradient-to-br from-blue-600/[0.08] to-transparent p-6">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10">
+                            <Car
+                              size={27}
+                              className="text-blue-400"
+                            />
+                          </div>
+
+                          <div>
+                            <h3 className="text-xl font-black">
+                              {vehicle.brand}{" "}
+                              {vehicle.model}
+                            </h3>
+
+                            <p className="mt-1 text-sm font-bold tracking-wider text-blue-400">
+                              {
+                                vehicle.vehicle_number
+                              }
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-green-400">
+                          <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                          Active
+                        </div>
                       </div>
 
+                      {vehicle.nickname && (
+                        <p className="mt-5 text-sm italic text-zinc-600">
+                          "{vehicle.nickname}"
+                        </p>
+                      )}
                     </div>
 
-                    {/* Right */}
+                    {/* Vehicle Details */}
+                    <div className="grid grid-cols-3 gap-px bg-white/10">
+                      <VehicleDetail
+                        label="Year"
+                        value={String(
+                          vehicle.year
+                        )}
+                      />
 
-                    <div className="grid grid-cols-2 gap-4 md:flex">
+                      <VehicleDetail
+                        label="Color"
+                        value={
+                          vehicle.color
+                        }
+                      />
 
-                      <Link
-                        href={`/view-vehicle/${vehicle.id}`}
-                        className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-5 py-3 text-center font-semibold transition hover:bg-blue-500/20"
-                      >
-                        View
-                      </Link>
+                      <VehicleDetail
+                        label="Contact"
+                        value={
+                          vehicle.phone
+                            ? "Available"
+                            : "Not set"
+                        }
+                      />
+                    </div>
 
-                      <Link
-                        href={`/edit-vehicle/${vehicle.id}`}
-                        className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-5 py-3 text-center font-semibold transition hover:bg-yellow-500/20"
-                      >
-                        Edit
-                      </Link>
-
-                      <Link
-                        href={`/vehicle/${vehicle.id}/qr`}
-                        className="rounded-xl border border-green-500/20 bg-green-500/10 px-5 py-3 text-center font-semibold transition hover:bg-green-500/20"
-                      >
-                        QR Code
-                      </Link>
-
+                    {/* Actions */}
+                    <div className="grid gap-2 p-5 sm:grid-cols-4">
                       <button
-                        className="rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-3 font-semibold transition hover:bg-red-500/20"
+                        type="button"
+                        onClick={() =>
+                          router.push(
+                            `/vehicle/${vehicle.id}`
+                          )
+                        }
+                        className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold transition hover:bg-white/10"
                       >
-                        Delete
+                        <Eye size={16} />
+                        View
                       </button>
 
+                      <button
+                        type="button"
+                        onClick={() =>
+                          router.push(
+                            `/edit-vehicle/${vehicle.id}`
+                          )
+                        }
+                        className="flex items-center justify-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-3 text-sm font-semibold text-blue-400 transition hover:bg-blue-500/20"
+                      >
+                        <Pencil size={16} />
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          router.push(
+                            `/dashboard/location?vehicle=${vehicle.id}`
+                          )
+                        }
+                        className="flex items-center justify-center gap-2 rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-3 text-sm font-semibold text-cyan-400 transition hover:bg-cyan-500/20"
+                      >
+                        <MapPin size={16} />
+                        Location
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDelete(
+                            vehicle
+                          )
+                        }
+                        disabled={
+                          deletingId ===
+                          vehicle.id
+                        }
+                        className="flex items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-3 text-sm font-semibold text-red-400 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {deletingId ===
+                        vehicle.id ? (
+                          <Loader2
+                            size={16}
+                            className="animate-spin"
+                          />
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
+
+                        Delete
+                      </button>
                     </div>
-
                   </div>
-
-                  {/* Bottom Strip */}
-
-                  <div className="grid grid-cols-2 border-t border-white/10 bg-black/20 md:grid-cols-4">
-
-                    <div className="p-5 text-center">
-
-                      <p className="text-xs uppercase tracking-wider text-zinc-500">
-
-                        Brand
-
-                      </p>
-
-                      <p className="mt-2 font-semibold">
-
-                        {vehicle.brand}
-
-                      </p>
-
-                    </div>
-
-                    <div className="p-5 text-center">
-
-                      <p className="text-xs uppercase tracking-wider text-zinc-500">
-
-                        Model
-
-                      </p>
-
-                      <p className="mt-2 font-semibold">
-
-                        {vehicle.model}
-
-                      </p>
-
-                    </div>
-
-                    <div className="p-5 text-center">
-
-                      <p className="text-xs uppercase tracking-wider text-zinc-500">
-
-                        QR Status
-
-                      </p>
-
-                      <p className="mt-2 font-semibold text-green-400">
-
-                        Active
-
-                      </p>
-
-                    </div>
-
-                    <div className="p-5 text-center">
-
-                      <p className="text-xs uppercase tracking-wider text-zinc-500">
-
-                        Security
-
-                      </p>
-
-                      <p className="mt-2 font-semibold text-blue-400">
-
-                        Protected
-
-                      </p>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              ))}
-
-            </div>
-
-          )}
-
-        </div>
-                {/* Premium Dashboard Widgets */}
-
-        <div className="mt-14 grid gap-8 xl:grid-cols-2">
-
-          {/* Smart Parking */}
-
-          <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/5 backdrop-blur-2xl">
-
-            <div className="bg-gradient-to-r from-green-600/20 to-emerald-500/10 p-8">
-
-              <div className="flex items-center justify-between">
-
-                <div className="flex items-center gap-4">
-
-                  <div className="rounded-2xl bg-green-500/20 p-4">
-
-                    <MapPin
-                      size={34}
-                      className="text-green-400"
-                    />
-
-                  </div>
-
-                  <div>
-
-                    <h2 className="text-3xl font-bold">
-
-                      Smart Parking
-
-                    </h2>
-
-                    <p className="text-zinc-400">
-
-                      Save and locate your vehicle instantly.
-
-                    </p>
-
-                  </div>
-
-                </div>
-
-                <span className="rounded-full bg-yellow-500/20 px-4 py-2 text-sm font-semibold text-yellow-300">
-
-                  Coming Soon
-
-                </span>
-
+                ))}
               </div>
-
-            </div>
-
-            <div className="space-y-5 p-8">
-
-              <button className="w-full rounded-2xl bg-green-600 py-4 text-lg font-bold transition hover:bg-green-700">
-
-                📍 Save Parking Location
-
-              </button>
-
-              <button className="w-full rounded-2xl border border-green-500/30 bg-green-500/10 py-4 text-lg font-semibold transition hover:bg-green-500/20">
-
-                🧭 Find My Vehicle
-
-              </button>
-
-            </div>
-
-          </div>
-
-          {/* Documents */}
-
-          <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/5 backdrop-blur-2xl">
-
-            <div className="bg-gradient-to-r from-blue-600/20 to-cyan-500/10 p-8">
-
-              <div className="flex items-center justify-between">
-
-                <div className="flex items-center gap-4">
-
-                  <div className="rounded-2xl bg-blue-500/20 p-4">
-
-                    <FileText
-                      size={34}
-                      className="text-blue-400"
-                    />
-
-                  </div>
-
-                  <div>
-
-                    <h2 className="text-3xl font-bold">
-
-                      Secure Documents
-
-                    </h2>
-
-                    <p className="text-zinc-400">
-
-                      RC, Insurance, PUC & Licence.
-
-                    </p>
-
-                  </div>
-
-                </div>
-
-                <span className="rounded-full bg-yellow-500/20 px-4 py-2 text-sm font-semibold text-yellow-300">
-
-                  Owner Only
-
-                </span>
-
-              </div>
-
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 p-8">
-
-              <div className="rounded-2xl bg-zinc-900/60 p-5">
-
-                <p className="text-sm text-zinc-500">
-
-                  Documents
-
-                </p>
-
-                <h3 className="mt-3 text-4xl font-black">
-
-                  0
-
-                </h3>
-
-              </div>
-
-              <div className="rounded-2xl bg-zinc-900/60 p-5">
-
-                <p className="text-sm text-zinc-500">
-
-                  Storage
-
-                </p>
-
-                <h3 className="mt-3 text-4xl font-black">
-
-                  ---
-
-                </h3>
-
-              </div>
-
-              <button className="col-span-2 rounded-2xl bg-blue-600 py-4 text-lg font-bold transition hover:bg-blue-700">
-
-                Upload Documents
-
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-
-
-
-        {/* Maintenance + Security */}
-
-        <div className="mt-8 grid gap-8 xl:grid-cols-2">
-
-          <div className="rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur-2xl">
-
-            <div className="flex items-center gap-4">
-
-              <div className="rounded-2xl bg-orange-500/20 p-4">
-
-                <Wrench
-                  className="text-orange-400"
-                  size={34}
-                />
-
-              </div>
-
-              <div>
-
-                <h2 className="text-3xl font-bold">
-
-                  Maintenance
-
-                </h2>
-
-                <p className="text-zinc-400">
-
-                  Track services and reminders.
-
-                </p>
-
-              </div>
-
-            </div>
-
-            <div className="mt-8 rounded-2xl border border-dashed border-zinc-700 p-8 text-center">
-
-              <h3 className="text-2xl font-bold">
-
-                No Services Added
-
-              </h3>
-
-              <p className="mt-3 text-zinc-500">
-
-                Soon you'll be able to track
-                oil changes, insurance,
-                PUC and more.
-
-              </p>
-
-            </div>
-
-          </div>
-
-          <div className="rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur-2xl">
-
-            <div className="flex items-center gap-4">
-
-              <div className="rounded-2xl bg-purple-500/20 p-4">
-
-                <Shield
-                  className="text-purple-400"
-                  size={34}
-                />
-
-              </div>
-
-              <div>
-
-                <h2 className="text-3xl font-bold">
-
-                  Account Security
-
-                </h2>
-
-                <p className="text-zinc-400">
-
-                  Your Vehix account is protected.
-
-                </p>
-
-              </div>
-
-            </div>
-
-            <div className="mt-8 space-y-5">
-
-              <div className="flex items-center justify-between rounded-2xl bg-zinc-900/60 p-5">
-
-                <span>Email Verified</span>
-
-                <span className="font-bold text-green-400">
-
-                  ✓ Active
-
-                </span>
-
-              </div>
-
-              <div className="flex items-center justify-between rounded-2xl bg-zinc-900/60 p-5">
-
-                <span>Profile Status</span>
-
-                <span className="font-bold text-blue-400">
-
-                  Completed
-
-                </span>
-
-              </div>
-
-              <div className="flex items-center justify-between rounded-2xl bg-zinc-900/60 p-5">
-
-                <span>Vehicle Protection</span>
-
-                <span className="font-bold text-green-400">
-
-                  Protected
-
-                </span>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-                {/* Footer */}
-
-        <div className="mt-14 rounded-[34px] border border-white/10 bg-gradient-to-r from-blue-700/20 via-blue-600/10 to-cyan-500/10 p-10 backdrop-blur-2xl">
-
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-
-            <div>
-
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-4 py-2">
-
-                <Sparkles size={16} className="text-blue-400" />
-
-                <span className="text-sm text-blue-300">
-                  Vehix Premium Dashboard
-                </span>
-
-              </div>
-
-              <h2 className="text-4xl font-black">
-
-                One Platform.
-
-                <br />
-
-                Every Vehicle.
-
+            )}
+          </section>
+
+          {/* Management */}
+          <section className="mt-12">
+            <div className="mb-6">
+              <h2 className="text-2xl font-black">
+                Vehicle Management
               </h2>
 
-              <p className="mt-5 max-w-2xl text-lg leading-8 text-zinc-400">
-
-                Manage your vehicles, generate secure QR identities,
-                protect your documents, save parking locations,
-                monitor maintenance and keep everything connected
-                from one powerful dashboard.
-
+              <p className="mt-2 text-sm text-zinc-600">
+                Quickly access the rest of your Vehix
+                vehicle tools.
               </p>
-
             </div>
 
-            <div className="grid gap-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <ManagementCard
+                icon={User}
+                title="Profile"
+                description="Manage your contact and emergency information."
+                onClick={() =>
+                  router.push(
+                    "/dashboard/profile"
+                  )
+                }
+              />
 
-              <Link
-                href="/add-vehicle"
-                className="rounded-2xl bg-blue-600 px-7 py-4 text-center font-bold transition hover:bg-blue-700"
-              >
-                Register New Vehicle
-              </Link>
+              <ManagementCard
+                icon={MapPin}
+                title="Parking Location"
+                description="Save and manage your vehicle parking location."
+                onClick={() =>
+                  router.push(
+                    "/dashboard/location"
+                  )
+                }
+              />
 
-              <Link
-                href="/dashboard/profile"
-                className="rounded-2xl border border-white/10 bg-white/5 px-7 py-4 text-center font-semibold transition hover:border-blue-500/30 hover:bg-white/10"
-              >
-                Manage Profile
-              </Link>
-
+              <ManagementCard
+                icon={FileText}
+                title="Documents"
+                description="Keep your RC, insurance, PUC and other documents secure."
+                onClick={() =>
+                  router.push(
+                    "/dashboard/documents"
+                  )
+                }
+              />
             </div>
+          </section>
 
-          </div>
+          {/* Security */}
+          <section className="mt-12 overflow-hidden rounded-[32px] border border-blue-500/20 bg-gradient-to-br from-blue-600/10 via-blue-500/[0.03] to-cyan-500/5 p-7 md:p-9">
+            <div className="flex flex-col gap-6 md:flex-row md:items-center">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10">
+                <ShieldCheck
+                  size={28}
+                  className="text-blue-400"
+                />
+              </div>
 
-          <div className="my-10 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              <div className="flex-1">
+                <h2 className="text-xl font-black">
+                  Your Vehix Identity
+                </h2>
 
-          <div className="grid gap-6 md:grid-cols-4">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
+                  Your vehicle information stays connected
+                  to your Vehix account. Public visitors
+                  can contact you through the information
+                  you choose to provide.
+                </p>
+              </div>
 
-            <div>
-
-              <h3 className="font-bold">
-                Vehicles
-              </h3>
-
-              <p className="mt-2 text-zinc-500">
-                {vehicles.length} Registered
-              </p>
-
-            </div>
-
-            <div>
-
-              <h3 className="font-bold">
-                Security
-              </h3>
-
-              <p className="mt-2 text-green-400">
+              <div className="flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/10 px-4 py-2 text-xs font-bold text-green-400">
+                <CheckCircle2 size={15} />
                 Protected
-              </p>
-
+              </div>
             </div>
+          </section>
 
-            <div>
-
-              <h3 className="font-bold">
-                Platform
-              </h3>
-
-              <p className="mt-2 text-zinc-500">
-                Next.js + Supabase
-              </p>
-
-            </div>
-
-            <div>
-
-              <h3 className="font-bold">
-                Version
-              </h3>
-
-              <p className="mt-2 text-zinc-500">
-                Vehix v1.0
-              </p>
-
-            </div>
-
-          </div>
-
-          <div className="mt-10 border-t border-white/10 pt-8 text-center">
-
-            <h3 className="text-3xl font-black tracking-widest">
-
-              VEHIX
-
-            </h3>
-
-            <p className="mt-3 text-zinc-500">
-
-              Smart Vehicle Identity Network
-
+          {/* Footer */}
+          <footer className="pb-8 pt-14 text-center">
+            <p className="text-xs text-zinc-700">
+              Vehix • Smart Vehicle Identity
             </p>
 
-            <p className="mt-8 text-sm text-zinc-600">
-
-              © {new Date().getFullYear()} Vehix. All Rights Reserved.
-
+            <p className="mt-2 text-[10px] uppercase tracking-[0.3em] text-zinc-800">
+              Smarter • Safer • Connected
             </p>
-
-          </div>
-
+          </footer>
         </div>
-
       </div>
-
     </main>
   );
+}
+
+/* ============================================
+   STAT CARD
+============================================ */
+
+function StatCard({
+  icon: Icon,
+  title,
+  value,
+  description,
+  alert = false,
+}: {
+  icon: typeof Car;
+  title: string;
+  value: string | number;
+  description: string;
+  alert?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-3xl border p-5 transition ${
+        alert
+          ? "border-red-500/20 bg-red-500/[0.04]"
+          : "border-white/10 bg-white/[0.03]"
+      }`}
+    >
+      <div className="flex items-start justify-between">
+        <div
+          className={`flex h-11 w-11 items-center justify-center rounded-xl ${
+            alert
+              ? "bg-red-500/10"
+              : "bg-blue-500/10"
+          }`}
+        >
+          <Icon
+            size={21}
+            className={
+              alert
+                ? "text-red-400"
+                : "text-blue-400"
+            }
+          />
+        </div>
+
+        {alert && (
+          <AlertTriangle
+            size={17}
+            className="text-red-400"
+          />
+        )}
+      </div>
+
+      <p className="mt-5 text-xs font-bold uppercase tracking-widest text-zinc-600">
+        {title}
+      </p>
+
+      <p className="mt-1 text-2xl font-black">
+        {value}
+      </p>
+
+      <p className="mt-1 text-xs text-zinc-700">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+/* ============================================
+   VEHICLE DETAIL
+============================================ */
+
+function VehicleDetail({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="bg-[#070b14] p-4 text-center">
+      <p className="text-[10px] uppercase tracking-widest text-zinc-700">
+        {label}
+      </p>
+
+      <p className="mt-1 truncate text-sm font-bold text-zinc-300">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+/* ============================================
+   MANAGEMENT CARD
+============================================ */
+
+function ManagementCard({
+  icon: Icon,
+  title,
+  description,
+  onClick,
+}: {
+  icon: typeof User;
+  title: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group rounded-3xl border border-white/10 bg-white/[0.03] p-6 text-left transition hover:-translate-y-1 hover:border-blue-500/20 hover:bg-white/[0.05]"
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10">
+          <Icon
+            size={22}
+            className="text-blue-400"
+          />
+        </div>
+
+        <ArrowRight
+          size={18}
+          className="text-zinc-700 transition group-hover:translate-x-1 group-hover:text-blue-400"
+        />
+      </div>
+
+      <h3 className="mt-5 text-lg font-black">
+        {title}
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-zinc-600">
+        {description}
+      </p>
+    </button>
+  );
+}
+
+/* ============================================
+   DATE FORMAT
+============================================ */
+
+function formatDate(
+  value: string
+) {
+  try {
+    return new Intl.DateTimeFormat(
+      "en-IN",
+      {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }
+    ).format(new Date(value));
+  } catch {
+    return value;
+  }
 }
