@@ -254,7 +254,7 @@ export default function Hero() {
 
               <h3 className="text-4xl font-black text-green-400">
 
-                99.9%
+                100%
 
               </h3>
 
@@ -778,7 +778,7 @@ export default function Hero() {
 
                 <h3 className="text-5xl font-black text-green-400">
 
-                  99.9%
+                  100%
 
                 </h3>
 
