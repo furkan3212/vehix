@@ -431,36 +431,59 @@ export default function QRVehiclePage() {
 
         /*
          * ---------------------------------------------------
-         * STEP 5: Load owner profile
+         * STEP 5: Load owner contact information securely
          * ---------------------------------------------------
+         *
+         * IMPORTANT:
+         *
+         * Do NOT query the profiles table directly from the
+         * public QR page. Anonymous QR visitors may not have
+         * permission to read private profile rows.
+         *
+         * The SECURITY DEFINER RPC should return only the
+         * contact fields required by the public QR actions.
          */
 
         if (vehicleData.user_id) {
           const {
-            data: profileData,
-            error: profileError,
-          } = await supabase
-            .from("profiles")
-            .select(
-              "id, full_name, phone, whatsapp, emergency_name, emergency_phone"
-            )
-            .eq("id", vehicleData.user_id)
-            .maybeSingle();
+            data: contactData,
+            error: contactError,
+          } = await supabase.rpc(
+            "get_public_vehicle_contact",
+            {
+              p_qr_code: qrData.qr_code,
+            }
+          );
 
-          /*
-           * A profile failure should NOT destroy the QR page.
-           *
-           * The vehicle itself can still be displayed.
-           */
-          if (profileError) {
+          if (contactError) {
             console.warn(
-              "Owner profile lookup:",
-              profileError
+              "Vehix public contact lookup:",
+              contactError
             );
-          }
 
-          if (!cancelled) {
-            setProfile(profileData || null);
+            /*
+             * Do not break vehicle verification if the
+             * optional contact lookup fails.
+             */
+            if (!cancelled) {
+              setProfile(null);
+            }
+          } else if (!cancelled && contactData) {
+            /*
+             * Keep the existing ProfileData shape so the
+             * Call, SMS, WhatsApp and Emergency functions
+             * below do not need to change.
+             */
+            setProfile({
+              id: vehicleData.user_id,
+              full_name: null,
+              phone: contactData.phone ?? null,
+              whatsapp: contactData.whatsapp ?? null,
+              emergency_name:
+                contactData.emergency_name ?? null,
+              emergency_phone:
+                contactData.emergency_phone ?? null,
+            });
           }
         }
 
