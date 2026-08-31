@@ -11,6 +11,8 @@ import {
   RefreshCw,
   Plus,
   ShoppingCart,
+  ExternalLink,
+  Printer,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -49,7 +51,7 @@ export default function AdminPage() {
   const [qrInventory, setQrInventory] = useState<QRItem[]>([]);
   const [loadingData, setLoadingData] = useState(false);
 
-  const [batchSize, setBatchSize] = useState("10");
+  const [batchSize, setBatchSize] = useState("1");
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
@@ -164,13 +166,55 @@ export default function AdminPage() {
         return;
       }
 
-      window.alert(
-        `${data} QR code${
-          data === 1 ? "" : "s"
-        } generated successfully.`
-      );
+      const generatedCount = Number(data ?? 0);
 
       await loadAdminData();
+
+      /*
+       * If exactly ONE QR was generated,
+       * automatically open the newest QR.
+       */
+      if (generatedCount === 1) {
+        const { data: latestQrData, error: latestQrError } =
+          await supabase.rpc("get_admin_qr_inventory");
+
+        if (latestQrError) {
+          console.error(
+            "Unable to find generated QR:",
+            latestQrError
+          );
+
+          window.alert(
+            "QR generated successfully, but we could not open it automatically."
+          );
+
+          return;
+        }
+
+        const latestInventory =
+          (latestQrData ?? []) as QRItem[];
+
+        const availableQrs = latestInventory.filter(
+          (item) => item.status === "available"
+        );
+
+        const newestQr = availableQrs.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() -
+            new Date(a.created_at).getTime()
+        )[0];
+
+        if (newestQr) {
+          router.push(`/qr/${newestQr.id}`);
+          return;
+        }
+      }
+
+      window.alert(
+        `${generatedCount} QR code${
+          generatedCount === 1 ? "" : "s"
+        } generated successfully.`
+      );
     } catch (error) {
       console.error("QR generation error:", error);
 
@@ -182,9 +226,31 @@ export default function AdminPage() {
     }
   };
 
+  const handleOpenQR = (item: QRItem) => {
+    router.push(`/qr/${item.id}`);
+  };
+
+  const handlePrintQR = (item: QRItem) => {
+    const url = `/qr/${item.id}?print=1`;
+
+    const printWindow = window.open(
+      url,
+      "_blank",
+      "noopener,noreferrer"
+    );
+
+    if (!printWindow) {
+      window.alert(
+        "Please allow pop-ups to open the QR print page."
+      );
+    }
+  };
+
   const handleMarkSold = async (item: QRItem) => {
     if (item.status !== "available") {
-      window.alert(`This QR cannot be sold because its status is "${item.status}".`);
+      window.alert(
+        `This QR cannot be sold because its status is "${item.status}".`
+      );
       return;
     }
 
@@ -201,15 +267,25 @@ export default function AdminPage() {
 
       if (error) {
         console.error("Mark QR sold failed:", error);
-        window.alert(`Unable to mark QR as sold: ${error.message}`);
+
+        window.alert(
+          `Unable to mark QR as sold: ${error.message}`
+        );
+
         return;
       }
 
-      window.alert(`${item.qr_code} has been marked as SOLD.`);
+      window.alert(
+        `${item.qr_code} has been marked as SOLD.`
+      );
+
       await loadAdminData();
     } catch (error) {
       console.error("Mark QR sold error:", error);
-      window.alert("Something went wrong while marking the QR as sold.");
+
+      window.alert(
+        "Something went wrong while marking the QR as sold."
+      );
     }
   };
 
@@ -263,13 +339,23 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold transition hover:bg-white/10"
-          >
-            <LogOut size={17} />
-            Logout
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push("/admin/orders")}
+              className="flex items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-sm font-semibold text-blue-300 transition hover:bg-blue-500/20"
+            >
+              <ShoppingCart size={17} />
+              Orders
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold transition hover:bg-white/10"
+            >
+              <LogOut size={17} />
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -395,7 +481,7 @@ export default function AdminPage() {
 
                 {generating
                   ? "Generating..."
-                  : "Generate QR Batch"}
+                  : "Generate QR"}
               </button>
 
               <button
@@ -441,13 +527,13 @@ export default function AdminPage() {
               </p>
 
               <p className="mt-2 text-sm text-zinc-600">
-                Generate your first QR batch.
+                Generate your first QR code.
               </p>
             </div>
           ) : (
             <div className="mt-8 overflow-hidden rounded-2xl border border-white/10">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1050px] text-left">
+                <table className="w-full min-w-[1250px] text-left">
                   <thead className="border-b border-white/10 bg-white/[0.03]">
                     <tr>
                       <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
@@ -472,6 +558,10 @@ export default function AdminPage() {
 
                       <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
                         Created
+                      </th>
+
+                      <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                        QR
                       </th>
 
                       <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
@@ -501,6 +591,8 @@ export default function AdminPage() {
                                 ? "bg-purple-500/10 text-purple-400"
                                 : item.status === "suspended"
                                 ? "bg-red-500/10 text-red-400"
+                                : item.status === "sold"
+                                ? "bg-amber-500/10 text-amber-400"
                                 : "bg-blue-500/10 text-blue-400"
                             }`}
                           >
@@ -534,11 +626,41 @@ export default function AdminPage() {
                           ).toLocaleDateString("en-IN")}
                         </td>
 
+                        {/* OPEN / PRINT QR */}
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleOpenQR(item)
+                              }
+                              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-blue-500"
+                            >
+                              <ExternalLink size={14} />
+                              Open
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handlePrintQR(item)
+                              }
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white transition hover:bg-white/10"
+                            >
+                              <Printer size={14} />
+                              Print
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* ACTION */}
                         <td className="px-5 py-4">
                           {item.status === "available" ? (
                             <button
                               type="button"
-                              onClick={() => handleMarkSold(item)}
+                              onClick={() =>
+                                handleMarkSold(item)
+                              }
                               className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-500"
                             >
                               <ShoppingCart size={15} />

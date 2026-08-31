@@ -25,6 +25,12 @@ import {
   Loader2,
   CheckCircle2,
   RefreshCw,
+  QrCode,
+  ShoppingBag,
+  Package,
+  ChevronRight,
+  Sparkles,
+  Clock3,
 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
@@ -111,6 +117,16 @@ export default function DashboardPage() {
   const [userName, setUserName] =
     useState("");
 
+  const [qrStatus, setQrStatus] = useState<
+    "not_ordered" | "pending" | "active"
+  >("not_ordered");
+
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [qrVehicleId, setQrVehicleId] = useState<string | null>(null);
+
+  const [orderLoading, setOrderLoading] =
+    useState(false);
+
   useEffect(() => {
     loadDashboard();
   }, []);
@@ -120,6 +136,7 @@ export default function DashboardPage() {
       loadVehicles(),
       loadAlerts(),
       loadUser(),
+      loadQRStatus(),
     ]);
 
     setLoading(false);
@@ -131,7 +148,10 @@ export default function DashboardPage() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user) return;
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
 
       const name =
         user.user_metadata?.full_name ||
@@ -209,6 +229,91 @@ export default function DashboardPage() {
     }
   }
 
+  async function loadQRStatus() {
+    try {
+      setOrderLoading(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      /*
+       * QR ownership is tracked in qr_inventory.
+       *
+       * After a successful QR purchase, complete_qr_order
+       * assigns a QR to the authenticated user and vehicle.
+       * The QR is initially "sold" and becomes "activated"
+       * after the owner completes activation.
+       *
+       * We therefore read qr_inventory directly instead of
+       * depending on the orders table or an orders.status column.
+       */
+      const { data, error } = await supabase
+        .from("qr_inventory")
+        .select(
+          "id,qr_code,status,assigned_user_id,vehicle_id,created_at"
+        )
+        .eq("assigned_user_id", user.id)
+        .order("created_at", {
+          ascending: false,
+        })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.warn(
+          "QR identity is not available yet:",
+          error.message
+        );
+
+        setQrStatus("not_ordered");
+        setQrCode(null);
+        setQrVehicleId(null);
+        return;
+      }
+
+      if (!data) {
+        setQrStatus("not_ordered");
+        setQrCode(null);
+        setQrVehicleId(null);
+        return;
+      }
+
+      setQrCode(data.qr_code ?? null);
+      setQrVehicleId(data.vehicle_id ?? null);
+
+      const status = String(
+        data.status ?? ""
+      ).toLowerCase();
+
+      if (
+        status === "activated" ||
+        status.includes("activ")
+      ) {
+        setQrStatus("active");
+      } else {
+        /*
+         * "sold" means the QR has been purchased and assigned,
+         * but it has not been activated yet.
+         */
+        setQrStatus("pending");
+      }
+    } catch (err) {
+      console.warn(
+        "QR status load skipped:",
+        err
+      );
+
+      setQrStatus("not_ordered");
+      setQrCode(null);
+      setQrVehicleId(null);
+    } finally {
+      setOrderLoading(false);
+    }
+  }
+
   async function handleDelete(
     vehicle: Vehicle
   ) {
@@ -222,14 +327,16 @@ export default function DashboardPage() {
     try {
       setDeletingId(vehicle.id);
 
-      const { error } =
-        await supabase
-          .from("vehicles")
-          .delete()
-          .eq("id", vehicle.id);
+      const result =
+        await deleteVehicle(
+          vehicle.id
+        );
 
-      if (error) {
-        throw error;
+      if (!result.success) {
+        throw new Error(
+          result.error ??
+            "Unable to delete vehicle."
+        );
       }
 
       setVehicles((current) =>
@@ -302,6 +409,9 @@ export default function DashboardPage() {
         alert.status !== "read"
     ).length;
 
+  const hasVehicles =
+    vehicles.length > 0;
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#030712] text-white">
@@ -323,17 +433,28 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#030712] text-white">
-      {/* Background */}
+      {/* BACKGROUND */}
       <div className="pointer-events-none fixed inset-0">
-        <div className="absolute left-[-200px] top-[-200px] h-[500px] w-[500px] rounded-full bg-blue-600/10 blur-[180px]" />
+        <div className="absolute left-[-220px] top-[-220px] h-[600px] w-[600px] rounded-full bg-blue-600/10 blur-[190px]" />
 
-        <div className="absolute bottom-[-200px] right-[-200px] h-[500px] w-[500px] rounded-full bg-cyan-500/10 blur-[180px]" />
+        <div className="absolute bottom-[-240px] right-[-240px] h-[600px] w-[600px] rounded-full bg-cyan-500/10 blur-[190px]" />
+
+        <div className="absolute left-1/2 top-1/3 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-blue-500/[0.025] blur-[150px]" />
       </div>
 
+      <div
+        className="pointer-events-none fixed inset-0 opacity-[0.018]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)",
+          backgroundSize: "60px 60px",
+        }}
+      />
+
       <div className="relative">
-        {/* Header */}
-        <header className="sticky top-0 z-40 border-b border-white/10 bg-[#030712]/80 backdrop-blur-2xl">
-          <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+        {/* HEADER */}
+        <header className="sticky top-0 z-40 border-b border-white/10 bg-[#030712]/85 backdrop-blur-2xl">
+          <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-6">
             <button
               type="button"
               onClick={() =>
@@ -356,7 +477,7 @@ export default function DashboardPage() {
               </div>
             </button>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={() =>
@@ -376,6 +497,7 @@ export default function DashboardPage() {
                 className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/10"
               >
                 <LogOut size={17} />
+
                 <span className="hidden sm:inline">
                   Logout
                 </span>
@@ -384,17 +506,17 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <div className="mx-auto max-w-7xl px-6 py-10 md:py-12">
-          {/* Welcome */}
-          <section className="mb-10">
-            <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+        <div className="mx-auto max-w-7xl px-5 py-8 sm:px-6 md:py-12">
+          {/* WELCOME */}
+          <section className="mb-8">
+            <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
               <div>
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-green-400">
                   <ShieldCheck size={14} />
                   Account Active
                 </div>
 
-                <h1 className="text-4xl font-black tracking-tight md:text-5xl">
+                <h1 className="text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
                   Welcome back
                   {userName
                     ? `, ${userName}`
@@ -402,10 +524,10 @@ export default function DashboardPage() {
                   .
                 </h1>
 
-                <p className="mt-3 max-w-2xl text-zinc-500">
-                  Manage your vehicles, alerts,
-                  documents and smart vehicle identity
-                  from one place.
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-500 sm:text-base">
+                  Everything you need to manage your
+                  vehicles and VEHIX identity, all in one
+                  place.
                 </p>
               </div>
 
@@ -424,7 +546,198 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* Quick Stats */}
+          {/* GET MY QR HERO */}
+          <section className="relative mb-8 overflow-hidden rounded-[32px] border border-blue-500/20 bg-gradient-to-br from-blue-600/[0.16] via-blue-500/[0.07] to-cyan-500/[0.08] p-6 shadow-2xl shadow-blue-950/20 sm:p-8 lg:p-10">
+            <div className="pointer-events-none absolute -right-24 -top-32 h-80 w-80 rounded-full border border-blue-400/10" />
+
+            <div className="pointer-events-none absolute -right-12 -top-20 h-56 w-56 rounded-full border border-cyan-400/10" />
+
+            <div className="pointer-events-none absolute right-12 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-blue-500/10 blur-[80px]" />
+
+            <div className="relative flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-2xl">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-blue-300">
+                  <QrCode size={14} />
+                  VEHIX QR Identity
+                </div>
+
+                <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
+                  Give your vehicle
+                  <br className="hidden sm:block" />
+                  <span className="bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
+                    its digital identity.
+                  </span>
+                </h2>
+
+                <p className="mt-4 max-w-xl text-sm leading-6 text-zinc-400 sm:text-base">
+                  Get your VEHIX QR sticker and connect your
+                  vehicle to a smart public identity. Choose
+                  a standard design, a VEHIX design or create
+                  your own custom design.
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[11px] font-semibold text-zinc-400">
+                    100% Waterproof
+                  </span>
+
+                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[11px] font-semibold text-zinc-400">
+                    Easy to Scan
+                  </span>
+
+                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[11px] font-semibold text-zinc-400">
+                    Smart Vehicle Identity
+                  </span>
+                </div>
+              </div>
+
+              <div className="relative shrink-0 lg:w-[300px]">
+                {qrStatus === "not_ordered" && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      router.push(
+                        "/qr-store"
+                      )
+                    }
+                    className="group relative flex w-full items-center justify-between overflow-hidden rounded-2xl bg-white px-5 py-5 text-left text-[#030712] shadow-2xl shadow-blue-950/30 transition duration-300 hover:-translate-y-1 hover:shadow-blue-900/30"
+                  >
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">
+                        Your next step
+                      </p>
+
+                      <p className="mt-1 text-xl font-black">
+                        Get My QR
+                      </p>
+
+                      <p className="mt-1 text-xs text-zinc-500">
+                        Choose your design
+                      </p>
+                    </div>
+
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-white transition group-hover:scale-110">
+                      <ArrowRight size={21} />
+                    </div>
+                  </button>
+                )}
+
+                {qrStatus === "pending" && (
+                  <div className="rounded-2xl border border-amber-500/20 bg-black/20 p-5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10">
+                        <Clock3
+                          size={21}
+                          className="text-amber-400"
+                        />
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-xs font-black uppercase tracking-wider text-amber-400">
+                          VEHIX QR
+                        </p>
+
+                        <p className="mt-1 font-bold">
+                          Activation Pending
+                        </p>
+
+                        {qrCode && (
+                          <p className="mt-1 truncate font-mono text-[11px] text-zinc-500">
+                            {qrCode}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 rounded-xl border border-amber-500/10 bg-amber-500/[0.04] px-4 py-3">
+                      <p className="text-xs leading-5 text-zinc-400">
+                        Your VEHIX QR has been purchased successfully and is
+                        currently waiting for activation by the VEHIX team.
+                      </p>
+                    </div>
+
+                    <p className="mt-4 text-[11px] leading-5 text-zinc-600">
+                      Your QR identity will appear here as soon as the VEHIX
+                      team activates it.
+                    </p>
+                  </div>
+                )}
+
+                {qrStatus === "active" && (
+                  <div className="rounded-2xl border border-green-500/20 bg-black/20 p-5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500/10">
+                        <QrCode
+                          size={21}
+                          className="text-green-400"
+                        />
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-xs font-black uppercase tracking-wider text-green-400">
+                          VEHIX QR
+                        </p>
+
+                        <p className="mt-1 font-bold">
+                          Active
+                        </p>
+
+                        {qrCode && (
+                          <p className="mt-1 truncate font-mono text-[11px] text-zinc-500">
+                            {qrCode}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {qrVehicleId && (
+                      <div className="mt-4 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2.5">
+                        <p className="text-[9px] font-black uppercase tracking-wider text-zinc-600">
+                          Linked Vehicle
+                        </p>
+                        <p className="mt-1 text-xs font-bold text-zinc-300">
+                          {vehicles.find(
+                            (vehicle) =>
+                              vehicle.id === qrVehicleId
+                          )
+                            ? `${vehicles.find(
+                                (vehicle) =>
+                                  vehicle.id === qrVehicleId
+                              )?.brand ?? ""} ${
+                                vehicles.find(
+                                  (vehicle) =>
+                                    vehicle.id === qrVehicleId
+                                )?.model ?? ""
+                              } • ${
+                                vehicles.find(
+                                  (vehicle) =>
+                                    vehicle.id === qrVehicleId
+                                )?.vehicle_number ?? ""
+                              }`
+                            : "Vehicle linked"}
+                        </p>
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        router.push(
+                          "/qr-store"
+                        )
+                      }
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold transition hover:bg-white/10"
+                    >
+                      Manage QR
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* QUICK STATS */}
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               icon={Car}
@@ -442,10 +755,20 @@ export default function DashboardPage() {
             />
 
             <StatCard
-              icon={MapPin}
-              title="Location"
-              value="Ready"
-              description="Parking location"
+              icon={QrCode}
+              title="QR Identity"
+              value={
+                qrStatus === "active"
+                  ? "Active"
+                  : qrStatus === "pending"
+                  ? "Pending"
+                  : "Not Ordered"
+              }
+              description={
+                qrStatus === "active"
+                  ? "Vehicle identity active"
+                  : "Get your VEHIX QR"
+              }
             />
 
             <StatCard
@@ -456,8 +779,52 @@ export default function DashboardPage() {
             />
           </section>
 
-          {/* Alerts */}
-          <section className="mt-10">
+          {/* QR STORE SHORTCUTS */}
+          <section className="mt-8 grid gap-4 md:grid-cols-3">
+            <QuickActionCard
+              icon={QrCode}
+              title="Get My QR"
+              description="Choose your VEHIX QR sticker and start your order."
+              badge="Shop"
+              onClick={() =>
+                router.push(
+                  "/qr-store"
+                )
+              }
+              primary
+            />
+
+            <QuickActionCard
+              icon={ShoppingBag}
+              title="My Orders"
+              description="View your QR orders and delivery status."
+              badge="Orders"
+              onClick={() =>
+                router.push(
+                  "/qr-store"
+                )
+              }
+            />
+
+            <QuickActionCard
+              icon={QrCode}
+              title="My VEHIX QR"
+              description={
+                qrStatus === "active"
+                  ? "View your activated VEHIX vehicle identity."
+                  : "Your QR will appear here after VEHIX activates it."
+              }
+              badge={qrStatus === "active" ? "Active" : "Pending"}
+              onClick={() => {
+                if (qrStatus === "active") {
+                  router.push("/qr-store");
+                }
+              }}
+            />
+          </section>
+
+          {/* ALERTS */}
+          <section className="mt-12">
             <div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
                 <div className="flex items-center gap-3">
@@ -473,8 +840,8 @@ export default function DashboardPage() {
                 </div>
 
                 <p className="mt-2 text-sm text-zinc-600">
-                  Alerts sent by people who scanned
-                  your Vehix vehicle identity.
+                  Alerts sent by people who scanned your VEHIX
+                  vehicle identity.
                 </p>
               </div>
 
@@ -523,9 +890,8 @@ export default function DashboardPage() {
                 </h3>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-600">
-                  When someone scans your Vehix QR
-                  and reports an issue, their alert
-                  will appear here.
+                  When someone scans your VEHIX QR and reports
+                  an issue, their alert will appear here.
                 </p>
               </div>
             ) : (
@@ -632,7 +998,7 @@ export default function DashboardPage() {
             )}
           </section>
 
-          {/* Vehicles */}
+          {/* VEHICLES */}
           <section className="mt-12">
             <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
@@ -641,7 +1007,7 @@ export default function DashboardPage() {
                 </h2>
 
                 <p className="mt-2 text-sm text-zinc-600">
-                  Manage your registered Vehix vehicles.
+                  Manage your registered VEHIX vehicles.
                 </p>
               </div>
 
@@ -679,8 +1045,8 @@ export default function DashboardPage() {
                 </h3>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-600">
-                  Add your first vehicle to create
-                  its digital Vehix identity.
+                  Add your first vehicle to create its digital
+                  VEHIX identity.
                 </p>
 
                 <button
@@ -703,7 +1069,7 @@ export default function DashboardPage() {
                     key={vehicle.id}
                     className="group overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.035] backdrop-blur-xl transition hover:border-blue-500/20"
                   >
-                    {/* Vehicle Header */}
+                    {/* VEHICLE HEADER */}
                     <div className="border-b border-white/10 bg-gradient-to-br from-blue-600/[0.08] to-transparent p-6">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-center gap-4">
@@ -741,7 +1107,7 @@ export default function DashboardPage() {
                       )}
                     </div>
 
-                    {/* Vehicle Details */}
+                    {/* VEHICLE DETAILS */}
                     <div className="grid grid-cols-3 gap-px bg-white/10">
                       <VehicleDetail
                         label="Year"
@@ -767,7 +1133,7 @@ export default function DashboardPage() {
                       />
                     </div>
 
-                    {/* Actions */}
+                    {/* ACTIONS */}
                     <div className="grid gap-2 p-5 sm:grid-cols-4">
                       <button
                         type="button"
@@ -840,7 +1206,7 @@ export default function DashboardPage() {
             )}
           </section>
 
-          {/* Management */}
+          {/* MANAGEMENT */}
           <section className="mt-12">
             <div className="mb-6">
               <h2 className="text-2xl font-black">
@@ -848,8 +1214,8 @@ export default function DashboardPage() {
               </h2>
 
               <p className="mt-2 text-sm text-zinc-600">
-                Quickly access the rest of your Vehix
-                vehicle tools.
+                Quickly access the rest of your VEHIX vehicle
+                tools.
               </p>
             </div>
 
@@ -889,7 +1255,7 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* Security */}
+          {/* SECURITY */}
           <section className="mt-12 overflow-hidden rounded-[32px] border border-blue-500/20 bg-gradient-to-br from-blue-600/10 via-blue-500/[0.03] to-cyan-500/5 p-7 md:p-9">
             <div className="flex flex-col gap-6 md:flex-row md:items-center">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10">
@@ -901,14 +1267,14 @@ export default function DashboardPage() {
 
               <div className="flex-1">
                 <h2 className="text-xl font-black">
-                  Your Vehix Identity
+                  Your VEHIX Identity
                 </h2>
 
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
-                  Your vehicle information stays connected
-                  to your Vehix account. Public visitors
-                  can contact you through the information
-                  you choose to provide.
+                  Your vehicle information stays connected to
+                  your VEHIX account. Public visitors can contact
+                  you through the information you choose to
+                  provide.
                 </p>
               </div>
 
@@ -919,10 +1285,10 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* Footer */}
+          {/* FOOTER */}
           <footer className="pb-8 pt-14 text-center">
             <p className="text-xs text-zinc-700">
-              Vehix • Smart Vehicle Identity
+              VEHIX • Smart Vehicle Identity
             </p>
 
             <p className="mt-2 text-[10px] uppercase tracking-[0.3em] text-zinc-800">
@@ -1002,6 +1368,77 @@ function StatCard({
 }
 
 /* ============================================
+   QUICK ACTION CARD
+============================================ */
+
+function QuickActionCard({
+  icon: Icon,
+  title,
+  description,
+  badge,
+  onClick,
+  primary = false,
+}: {
+  icon: typeof QrCode;
+  title: string;
+  description: string;
+  badge: string;
+  onClick: () => void;
+  primary?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group relative overflow-hidden rounded-3xl border p-6 text-left transition duration-300 hover:-translate-y-1 ${
+        primary
+          ? "border-blue-500/20 bg-blue-500/[0.07] hover:bg-blue-500/[0.10]"
+          : "border-white/10 bg-white/[0.03] hover:border-blue-500/20 hover:bg-white/[0.05]"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div
+          className={`flex h-12 w-12 items-center justify-center rounded-xl ${
+            primary
+              ? "bg-blue-500/15"
+              : "bg-white/5"
+          }`}
+        >
+          <Icon
+            size={22}
+            className={
+              primary
+                ? "text-blue-400"
+                : "text-zinc-400"
+            }
+          />
+        </div>
+
+        <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-zinc-600">
+          {badge}
+        </span>
+      </div>
+
+      <h3 className="mt-5 text-lg font-black">
+        {title}
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-zinc-600">
+        {description}
+      </p>
+
+      <div className="mt-5 flex items-center gap-2 text-sm font-bold text-blue-400">
+        Open
+        <ArrowRight
+          size={16}
+          className="transition group-hover:translate-x-1"
+        />
+      </div>
+    </button>
+  );
+}
+
+/* ============================================
    VEHICLE DETAIL
 ============================================ */
 
@@ -1054,7 +1491,7 @@ function ManagementCard({
           />
         </div>
 
-        <ArrowRight
+        <ChevronRight
           size={18}
           className="text-zinc-700 transition group-hover:translate-x-1 group-hover:text-blue-400"
         />

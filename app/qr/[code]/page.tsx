@@ -848,529 +848,125 @@ export default function QRVehiclePage() {
   }
 
   /* =======================================================
-     MAIN VERIFIED PAGE
+     PREMIUM PUBLIC UI
      ======================================================= */
 
+  const vehicleName = `${vehicle.brand} ${vehicle.model}`.trim();
+  const vehicleMeta = [vehicle.colour, vehicle.vehicle_type, vehicle.year ? String(vehicle.year) : null].filter(Boolean);
+
   return (
-    <main className="min-h-screen bg-[#030303] px-4 py-6 text-white sm:px-6 sm:py-10">
-      <div className="mx-auto max-w-5xl">
+    <main className="min-h-screen bg-[#050506] text-white selection:bg-red-500/30">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute left-1/2 top-[-220px] h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-red-600/[0.08] blur-[120px]" />
+        <div className="absolute bottom-[-260px] right-[-160px] h-[500px] w-[500px] rounded-full bg-blue-600/[0.05] blur-[120px]" />
+      </div>
 
-        {/* =================================================
-            HEADER
-            ================================================= */}
-
-        <div className="mb-6 flex items-center justify-between">
+      <div className="relative mx-auto w-full max-w-6xl px-4 pb-12 pt-4 sm:px-6 sm:pt-7">
+        <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-500/10">
-              <ShieldCheck
-                size={24}
-                className="text-red-500"
-              />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] shadow-lg shadow-black/20">
+              <ShieldCheck size={20} className="text-red-500" />
             </div>
-
             <div>
-              <p className="text-sm font-black tracking-wide">
-                VEHIX
-              </p>
-
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-600">
-                Smart Vehicle Identity
-              </p>
+              <p className="text-sm font-black tracking-[0.18em]">VEHIX</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-zinc-600">Smart Vehicle Identity</p>
             </div>
           </div>
-
-          <div className="hidden items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-4 py-2 sm:flex">
-            <CheckCircle2
-              size={15}
-              className="text-emerald-400"
-            />
-
-            <span className="text-xs font-semibold text-emerald-400">
-              Official Vehix Network
-            </span>
+          <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
+            <span className="text-[10px] font-bold text-emerald-400">VERIFIED</span>
           </div>
-        </div>
+        </header>
 
-        {/* =================================================
-            HERO
-            ================================================= */}
-
-        <section className="relative overflow-hidden rounded-[2rem] border border-red-500/20 bg-gradient-to-br from-red-600 via-red-500 to-red-700 p-7 shadow-[0_20px_80px_rgba(239,68,68,0.18)] sm:p-10">
-          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-
-          <div className="relative">
+        <section className="relative mt-5 overflow-hidden rounded-[2rem] border border-white/10 bg-[#0d0d10] shadow-2xl shadow-black/40">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(239,68,68,0.18),transparent_48%)]" />
+          <div className="relative p-6 sm:p-10">
             <div className="flex flex-col items-center text-center">
-
-              <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-white/10 backdrop-blur">
-                <ShieldCheck
-                  size={42}
-                  className="text-white"
-                />
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1.5">
+                <CheckCircle2 size={14} className="text-emerald-400" />
+                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-400">Official Vehix Identity</span>
               </div>
-
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-5 py-2 text-xs font-bold uppercase tracking-wider backdrop-blur">
-                <CheckCircle2 size={15} />
-                Verified by Vehix
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/[0.08] shadow-[0_0_40px_rgba(239,68,68,0.12)]">
+                <Car size={30} className="text-red-500" />
               </div>
-
-              <h1 className="mt-6 break-all text-4xl font-black tracking-tight sm:text-6xl">
-                {vehicle.vehicle_number.toUpperCase()}
-              </h1>
-
-              <p className="mt-3 text-xl font-semibold sm:text-2xl">
-                {vehicle.brand.toUpperCase()}{" "}
-                <span className="opacity-60">
-                  •
-                </span>{" "}
-                {vehicle.model.toUpperCase()}
-              </p>
-
-              <div className="mt-7 flex flex-wrap justify-center gap-3">
-                <div className="flex items-center gap-2 rounded-full bg-emerald-400 px-4 py-2 text-sm font-bold text-black">
-                  <CheckCircle2 size={16} />
-                  Registered
+              <p className="mt-6 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-600">Vehicle Registration</p>
+              <h1 className="mt-2 break-all text-4xl font-black tracking-[-0.04em] sm:text-6xl">{vehicle.vehicle_number.toUpperCase()}</h1>
+              <p className="mt-3 text-lg font-semibold text-zinc-300 sm:text-xl">{vehicleName.toUpperCase()}</p>
+              {vehicleMeta.length > 0 && (
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                  {vehicleMeta.map((item) => <span key={item} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-zinc-400">{item}</span>)}
                 </div>
-
-                <div className="flex items-center gap-2 rounded-full bg-blue-500 px-4 py-2 text-sm font-bold">
-                  <Lock size={15} />
-                  Privacy Protected
-                </div>
-
-                <div className="flex items-center gap-2 rounded-full bg-black/20 px-4 py-2 text-sm font-bold">
-                  <QrCode size={16} />
-                  Authentic QR
-                </div>
+              )}
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black"><CheckCircle2 size={13} />Active</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400"><Lock size={13} />Privacy Protected</span>
               </div>
             </div>
           </div>
         </section>
-
-        {/* =================================================
-            VEHICLE PHOTO
-            ================================================= */}
 
         {vehicle.photo_url && (
-          <section className="mt-6 overflow-hidden rounded-3xl border border-white/10 bg-[#111113]">
-            <img
-              src={vehicle.photo_url}
-              alt={`${vehicle.brand} ${vehicle.model}`}
-              className="h-auto max-h-[520px] w-full object-cover"
-            />
+          <section className="mt-4 overflow-hidden rounded-[2rem] border border-white/10 bg-[#0d0d10]">
+            <img src={vehicle.photo_url} alt={vehicleName} className="max-h-[560px] w-full object-cover" />
           </section>
         )}
 
-        {/* =================================================
-            VEHICLE INFORMATION
-            ================================================= */}
-
-        <section className="mt-6 rounded-3xl border border-white/10 bg-[#111113] p-6 sm:p-8">
-          <div className="mb-7 flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10">
-              <Car
-                size={28}
-                className="text-red-500"
-              />
-            </div>
-
+        <section className="mt-4 overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#161619] to-[#0b0b0d] p-5 sm:p-7">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-2xl font-black">
-                Vehicle Information
-              </h2>
-
-              <p className="mt-1 text-sm text-zinc-500">
-                Official details verified by Vehix.
-              </p>
+              <div className="flex items-center gap-2 text-red-400"><Phone size={16} /><span className="text-[10px] font-black uppercase tracking-[0.25em]">Need to reach the owner?</span></div>
+              <h2 className="mt-2 text-2xl font-black">Contact the vehicle owner</h2>
+              <p className="mt-1 max-w-xl text-sm leading-5 text-zinc-500">Choose the fastest way to notify or contact the registered owner.</p>
             </div>
+            <button type="button" onClick={callOwner} className="flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 py-4 text-sm font-black text-white shadow-lg shadow-red-950/30 transition hover:bg-red-500 active:scale-[0.98] sm:w-auto"><Phone size={18} />Call Owner</button>
           </div>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <button type="button" onClick={openWhatsApp} className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-sm font-bold text-zinc-200 transition hover:bg-white/[0.08] active:scale-[0.98]"><MessageCircle size={17} />WhatsApp</button>
+            <button type="button" onClick={sendSMS} className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-sm font-bold text-zinc-200 transition hover:bg-white/[0.08] active:scale-[0.98]"><MessageCircle size={17} />SMS</button>
+          </div>
+          <div className="mt-4 flex items-center gap-2 text-[10px] text-zinc-600"><Lock size={12} />Owner contact details are not displayed publicly.</div>
+        </section>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <InfoCard
-              label="Registration Number"
-              value={vehicle.vehicle_number.toUpperCase()}
-            />
-
-            <InfoCard
-              label="Brand"
-              value={vehicle.brand.toUpperCase()}
-            />
-
-            <InfoCard
-              label="Model"
-              value={vehicle.model.toUpperCase()}
-            />
-
-            <InfoCard
-              label="Colour"
-              value={
-                vehicle.colour ||
-                "Not provided"
-              }
-            />
-
-            <InfoCard
-              label="Vehicle Type"
-              value={
-                vehicle.vehicle_type ||
-                "Vehicle"
-              }
-            />
-
-            <InfoCard
-              label="Identity Status"
-              value="Verified & Active"
-              verified
-            />
+        <section className="mt-4 rounded-[2rem] border border-white/10 bg-[#0d0d10] p-5 sm:p-7">
+          <div className="mb-5 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-500/[0.08]"><Car size={22} className="text-red-500" /></div><div><h2 className="text-xl font-black">Vehicle Details</h2><p className="text-xs text-zinc-600">Verified information from the Vehix identity system.</p></div></div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <InfoCard label="Registration" value={vehicle.vehicle_number.toUpperCase()} />
+            <InfoCard label="Brand" value={vehicle.brand.toUpperCase()} />
+            <InfoCard label="Model" value={vehicle.model.toUpperCase()} />
+            <InfoCard label="Colour" value={vehicle.colour || "Not provided"} />
+            <InfoCard label="Vehicle Type" value={vehicle.vehicle_type || "Vehicle"} />
+            {vehicle.year && <InfoCard label="Year" value={String(vehicle.year)} />}
           </div>
         </section>
 
-        {/* =================================================
-            PRIVACY
-            ================================================= */}
-
-        <section className="mt-6 rounded-3xl border border-blue-500/10 bg-blue-500/[0.04] p-6 sm:p-8">
-          <div className="flex gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10">
-              <Lock
-                size={24}
-                className="text-blue-400"
-              />
-            </div>
-
-            <div>
-              <h2 className="text-lg font-bold">
-                Privacy Protected
-              </h2>
-
-              <p className="mt-2 text-sm leading-6 text-zinc-500">
-                Vehix protects the vehicle owner's personal
-                information. Private phone numbers and contact
-                details are never displayed publicly through
-                this QR identity.
-              </p>
-            </div>
+        <section className="mt-4 overflow-hidden rounded-[2rem] border border-red-500/20 bg-gradient-to-br from-red-950/40 via-[#13090b] to-[#0c0c0f] p-5 sm:p-7">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-500/10"><Siren size={24} className="text-red-400" /></div><div><p className="text-[10px] font-black uppercase tracking-[0.25em] text-red-400">Emergency Contact</p><h2 className="mt-1 text-xl font-black">Need immediate help?</h2><p className="mt-1 text-sm text-zinc-500">Call the emergency contact registered for this vehicle.</p>{profile?.emergency_name && <p className="mt-2 text-xs text-zinc-600">Contact: <span className="font-semibold text-zinc-400">{profile.emergency_name}</span></p>}</div></div>
+            <button type="button" onClick={callEmergencyContact} className="flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 py-3.5 text-sm font-black text-white transition hover:bg-red-500 active:scale-[0.98] sm:w-auto"><Phone size={18} />Call Emergency Contact</button>
           </div>
+          <div className="mt-5 rounded-xl border border-red-500/10 bg-black/20 px-4 py-3 text-[10px] leading-5 text-zinc-600">This calls the emergency contact registered by the vehicle owner. It does not contact police, ambulance or fire services.</div>
         </section>
 
-        {/* =================================================
-            EMERGENCY CONTACT
-            ================================================= */}
-
-        <section className="mt-6 overflow-hidden rounded-3xl border border-red-500/30 bg-gradient-to-br from-red-950/60 via-[#160609] to-[#0c0c0f] p-6 shadow-[0_15px_60px_rgba(239,68,68,0.08)] sm:p-8">
-
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-
-            <div className="flex items-start gap-4">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-red-500/10">
-                <Siren
-                  size={32}
-                  className="text-red-400"
-                />
-              </div>
-
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-red-400">
-                  Emergency Contact
-                </p>
-
-                <h2 className="mt-2 text-2xl font-black sm:text-3xl">
-                  Need immediate help?
-                </h2>
-
-                <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-500">
-                  Call the emergency contact associated with
-                  this vehicle directly.
-                </p>
-
-                {profile?.emergency_name && (
-                  <p className="mt-3 text-xs font-semibold text-zinc-600">
-                    Emergency contact:{" "}
-                    <span className="text-zinc-400">
-                      {profile.emergency_name}
-                    </span>
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={callEmergencyContact}
-              className="flex w-full shrink-0 items-center justify-center gap-3 rounded-2xl bg-red-600 px-7 py-4 text-sm font-black text-white transition hover:bg-red-500 active:scale-[0.98] sm:w-auto"
-            >
-              <Phone size={20} />
-              Call Emergency Contact
-            </button>
-          </div>
-
-          <div className="mt-6 flex gap-3 rounded-2xl border border-red-500/10 bg-black/20 p-4">
-            <AlertTriangle
-              size={18}
-              className="mt-0.5 shrink-0 text-red-400"
-            />
-
-            <p className="text-xs leading-5 text-zinc-500">
-              This calls the emergency contact registered by
-              the vehicle owner. It does not contact police,
-              ambulance or fire services.
-            </p>
+        <section className="mt-4 rounded-[2rem] border border-white/10 bg-[#0d0d10] p-5 sm:p-7">
+          <div className="mb-5"><p className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-400">Vehicle Alerts</p><h2 className="mt-2 text-2xl font-black">Something needs attention?</h2><p className="mt-1 text-sm text-zinc-500">Send a predefined notification to the vehicle owner.</p></div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ActionCard icon={<Lightbulb size={21} />} title="Lights On" description="The vehicle lights appear to be on." disabled={actionState.loading} onClick={() => sendVehicleAction("lights_on", "Lights On")} />
+            <ActionCard icon={<DoorOpen size={21} />} title="Door Open" description="A door or window appears to be open." disabled={actionState.loading} onClick={() => sendVehicleAction("door_open", "Door Open")} />
+            <ActionCard icon={<CarFront size={21} />} title="Vehicle Blocking" description="This vehicle is blocking access." disabled={actionState.loading} onClick={() => sendVehicleAction("blocking", "Vehicle Blocking")} />
+            <ActionCard icon={<Search size={21} />} title="Found Vehicle" description="Someone found or located this vehicle." disabled={actionState.loading} onClick={() => sendVehicleAction("found_vehicle", "Found Vehicle")} />
           </div>
         </section>
-
-        {/* =================================================
-            QUICK ACTIONS
-            ================================================= */}
-
-        <section className="mt-6 rounded-3xl border border-white/10 bg-[#111113] p-6 sm:p-8">
-
-          <div className="mb-7">
-            <p className="text-xs font-black uppercase tracking-[0.25em] text-blue-400">
-              Quick Actions
-            </p>
-
-            <h2 className="mt-2 text-2xl font-black sm:text-3xl">
-              Need to reach the owner?
-            </h2>
-
-            <p className="mt-2 text-sm text-zinc-500">
-              Choose an action below. No registration or
-              contact form is required.
-            </p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-
-            {/* CALL */}
-            <ActionCard
-              icon={<Phone size={25} />}
-              title="Call Owner"
-              description="Call the registered owner directly."
-              onClick={callOwner}
-            />
-
-            {/* SMS */}
-            <ActionCard
-              icon={
-                <MessageCircle size={25} />
-              }
-              title="Send SMS"
-              description="Open your SMS app directly."
-              onClick={sendSMS}
-            />
-
-            {/* WHATSAPP */}
-            <ActionCard
-              icon={
-                <MessageCircle size={25} />
-              }
-              title="WhatsApp"
-              description="Open WhatsApp directly."
-              onClick={openWhatsApp}
-            />
-
-          </div>
-        </section>
-
-        {/* =================================================
-            VEHICLE ALERTS
-            ================================================= */}
-
-        <section className="mt-6 rounded-3xl border border-white/10 bg-[#111113] p-6 sm:p-8">
-
-          <div className="mb-7">
-            <p className="text-xs font-black uppercase tracking-[0.25em] text-red-400">
-              Vehicle Alerts
-            </p>
-
-            <h2 className="mt-2 text-2xl font-black sm:text-3xl">
-              Something needs attention?
-            </h2>
-
-            <p className="mt-2 text-sm text-zinc-500">
-              Send a predefined notification to the vehicle
-              owner instantly.
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
-            {/* LIGHTS */}
-            <ActionCard
-              icon={<Lightbulb size={25} />}
-              title="Lights On"
-              description="Vehicle lights appear to be on."
-              disabled={actionState.loading}
-              onClick={() =>
-                sendVehicleAction(
-                  "lights_on",
-                  "Lights On"
-                )
-              }
-            />
-
-            {/* DOOR */}
-            <ActionCard
-              icon={<DoorOpen size={25} />}
-              title="Door Open"
-              description="Vehicle door or window appears open."
-              disabled={actionState.loading}
-              onClick={() =>
-                sendVehicleAction(
-                  "door_open",
-                  "Door Open"
-                )
-              }
-            />
-
-            {/* BLOCKING */}
-            <ActionCard
-              icon={<CarFront size={25} />}
-              title="Vehicle Blocking"
-              description="This vehicle is blocking access."
-              disabled={actionState.loading}
-              onClick={() =>
-                sendVehicleAction(
-                  "blocking",
-                  "Vehicle Blocking"
-                )
-              }
-            />
-
-            {/* FOUND VEHICLE */}
-            <ActionCard
-              icon={<Search size={25} />}
-              title="Found Vehicle"
-              description="Someone found or located this vehicle."
-              disabled={actionState.loading}
-              onClick={() =>
-                sendVehicleAction(
-                  "found_vehicle",
-                  "Found Vehicle"
-                )
-              }
-            />
-
-          </div>
-        </section>
-
-        {/* =================================================
-            ACTION STATUS
-            ================================================= */}
 
         {showActionMessage && (
-          <section className="mt-6 rounded-3xl border border-white/10 bg-[#111113] p-5">
-
-            <div className="flex items-start gap-4">
-
-              {actionState.loading ? (
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10">
-                  <Loader2
-                    size={22}
-                    className="animate-spin text-blue-400"
-                  />
-                </div>
-              ) : actionState.success ? (
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10">
-                  <CheckCircle2
-                    size={22}
-                    className="text-emerald-400"
-                  />
-                </div>
-              ) : (
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-500/10">
-                  <AlertTriangle
-                    size={22}
-                    className="text-red-400"
-                  />
-                </div>
-              )}
-
-              <div className="min-w-0 flex-1">
-
-                <p className="font-bold text-white">
-                  {actionState.loading
-                    ? `Sending ${successAction} alert...`
-                    : actionState.success
-                      ? `${successAction} alert sent`
-                      : "Action unavailable"}
-                </p>
-
-                <p className="mt-1 text-sm leading-5 text-zinc-500">
-                  {actionState.loading
-                    ? "Please wait..."
-                    : actionState.success
-                      ? "The vehicle owner has been notified through Vehix."
-                      : actionState.error}
-                </p>
-              </div>
-
-              {!actionState.loading && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowActionMessage(false)
-                  }
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-zinc-600 transition hover:bg-white/5 hover:text-white"
-                >
-                  <X size={18} />
-                </button>
-              )}
-
-            </div>
-          </section>
+          <section className="mt-4 rounded-2xl border border-white/10 bg-[#0d0d10] p-4"><div className="flex items-center gap-3"><div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${actionState.loading ? "bg-blue-500/10" : actionState.success ? "bg-emerald-500/10" : "bg-red-500/10"}`}>{actionState.loading ? <Loader2 size={19} className="animate-spin text-blue-400" /> : actionState.success ? <CheckCircle2 size={19} className="text-emerald-400" /> : <AlertTriangle size={19} className="text-red-400" />}</div><div className="min-w-0 flex-1"><p className="text-sm font-bold">{actionState.loading ? `Sending ${successAction} alert...` : actionState.success ? `${successAction} alert sent` : "Action unavailable"}</p><p className="mt-0.5 text-xs text-zinc-600">{actionState.loading ? "Please wait..." : actionState.success ? "The vehicle owner has been notified through Vehix." : actionState.error}</p></div>{!actionState.loading && <button type="button" onClick={() => setShowActionMessage(false)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-600 hover:bg-white/5 hover:text-white" aria-label="Close"><X size={17} /></button>}</div></section>
         )}
 
-        {/* =================================================
-            OFFICIAL VERIFICATION
-            ================================================= */}
-
-        <section className="mt-6 rounded-3xl border border-white/10 bg-[#0c0c0e] p-6 text-center">
-
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10">
-            <ShieldCheck
-              size={28}
-              className="text-blue-400"
-            />
-          </div>
-
-          <p className="mt-5 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-600">
-            Official Vehix Identity
-          </p>
-
-          <p className="mt-2 font-mono text-sm font-bold text-zinc-400">
-            {qr.qr_code}
-          </p>
-
-          <p className="mx-auto mt-5 max-w-2xl text-xs leading-5 text-zinc-700">
-            This vehicle identity is controlled by Vehix.
-            Vehicle information and QR activation are
-            protected through the Vehix identity system.
-          </p>
-
-          <div className="mt-5 flex items-center justify-center gap-2 text-xs text-emerald-500">
-            <ShieldCheck size={15} />
-            Authentic Vehix Identity
-          </div>
+        <section className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-[2rem] border border-blue-500/10 bg-blue-500/[0.035] p-5"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10"><Lock size={20} className="text-blue-400" /></div><h3 className="mt-4 text-base font-black">Privacy Protected</h3><p className="mt-2 text-xs leading-5 text-zinc-600">Personal phone numbers and private account information are not displayed publicly through this QR identity.</p></div>
+          <div className="rounded-[2rem] border border-white/10 bg-[#0d0d10] p-5"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10"><QrCode size={20} className="text-emerald-400" /></div><h3 className="mt-4 text-base font-black">Authentic Vehix QR</h3><p className="mt-2 break-all font-mono text-xs text-zinc-500">{qr.qr_code}</p><div className="mt-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-emerald-400"><ShieldCheck size={13} />Verified & Active</div></div>
         </section>
 
-        {/* =================================================
-            FOOTER
-            ================================================= */}
-
-        <footer className="py-10 text-center">
-          <p className="text-sm font-bold text-zinc-600">
-            VEHIX
-          </p>
-
-          <p className="mt-1 text-xs text-zinc-700">
-            Smart Vehicle Identity Network
-          </p>
-
-          <p className="mt-4 text-[10px] text-zinc-800">
-            This vehicle identity is verified through the
-            official Vehix network.
-          </p>
-        </footer>
-
+        <footer className="px-2 py-10 text-center"><div className="mx-auto mb-4 h-px max-w-xs bg-gradient-to-r from-transparent via-white/10 to-transparent" /><p className="text-sm font-black tracking-[0.2em] text-zinc-700">VEHIX</p><p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.25em] text-zinc-800">Smart Vehicle Identity Network</p></footer>
       </div>
     </main>
   );
