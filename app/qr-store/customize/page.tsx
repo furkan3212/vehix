@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -81,7 +81,7 @@ function VehicleTypeIcon({
   return <Car size={size} />;
 }
 
-export default function QRCustomizePage() {
+function QRCustomizePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -1121,5 +1121,36 @@ export default function QRCustomizePage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function QRCustomizePage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#020611] text-white">
+          <div className="flex min-h-screen items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/10">
+                <QrCode
+                  size={30}
+                  className="animate-pulse text-blue-400"
+                />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-bold uppercase tracking-[0.25em] text-blue-400">
+                  VEHIX
+                </p>
+                <p className="mt-2 text-sm text-zinc-500">
+                  Preparing your QR customization...
+                </p>
+              </div>
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <QRCustomizePageContent />
+    </Suspense>
   );
 }

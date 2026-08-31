@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -138,7 +138,7 @@ function loadRazorpayScript(): Promise<boolean> {
    PAGE
    ========================================================= */
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -1683,5 +1683,24 @@ if (!razorpayKey) {
       </div>
 
     </main>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[#030712] text-white">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-blue-500" />
+            <p className="text-sm text-zinc-500">
+              Preparing your secure payment...
+            </p>
+          </div>
+        </main>
+      }
+    >
+      <PaymentPageContent />
+    </Suspense>
   );
 }
