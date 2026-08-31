@@ -25,18 +25,16 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] =
-    useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-  const [showPassword, setShowPassword] =
-    useState(false);
-
-  const [showConfirmPassword, setShowConfirmPassword] =
-    useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
 
   async function handleRegister(
     e: React.FormEvent<HTMLFormElement>
@@ -62,14 +60,19 @@ export default function RegisterPage() {
     }
 
     if (password.length < 6) {
-      setError(
-        "Password must be at least 6 characters."
-      );
+      setError("Password must be at least 6 characters.");
       return;
     }
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
+      return;
+    }
+
+    if (!acceptedLegal) {
+      setError(
+        "Please accept the Terms & Conditions and Privacy Policy to create your account."
+      );
       return;
     }
 
@@ -83,9 +86,7 @@ export default function RegisterPage() {
       );
 
       if (!result.success) {
-        setError(
-          result.error || "Registration failed."
-        );
+        setError(result.error || "Registration failed.");
         return;
       }
 
@@ -338,112 +339,90 @@ export default function RegisterPage() {
               </p>
 
             </div>
-
-            {/* REGISTER FORM */}
+                        {/* FORM */}
             <form
               onSubmit={handleRegister}
-              className="space-y-4"
+              className="space-y-5"
             >
 
               {/* FULL NAME */}
               <div>
-
                 <label
                   htmlFor="fullName"
-                  className="mb-2 block text-sm font-semibold text-zinc-200"
+                  className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500"
                 >
                   Full name
                 </label>
 
-                <div className="group relative">
+                <div className="relative">
 
                   <UserRound
-                    size={18}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 transition group-focus-within:text-blue-400"
+                    size={17}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600"
                   />
 
                   <input
                     id="fullName"
                     type="text"
-                    autoComplete="name"
-                    placeholder="Your full name"
                     value={fullName}
                     onChange={(e) =>
                       setFullName(e.target.value)
                     }
-                    className="h-13 w-full rounded-2xl border border-white/10 bg-black/30 pl-12 pr-4 text-sm text-white outline-none transition duration-300 placeholder:text-zinc-700 focus:border-blue-500/60 focus:bg-blue-500/[0.03] focus:ring-4 focus:ring-blue-500/10"
+                    placeholder="Enter your full name"
+                    autoComplete="name"
+                    disabled={loading}
+                    className="h-13 w-full rounded-2xl border border-white/10 bg-white/[0.035] pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-zinc-700 focus:border-blue-500/50 focus:bg-blue-500/[0.035] disabled:cursor-not-allowed disabled:opacity-60"
                   />
 
                 </div>
-
               </div>
 
               {/* EMAIL */}
               <div>
-
                 <label
                   htmlFor="email"
-                  className="mb-2 block text-sm font-semibold text-zinc-200"
+                  className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500"
                 >
                   Email address
                 </label>
 
-                <div className="group relative">
+                <div className="relative">
 
                   <Mail
-                    size={18}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 transition group-focus-within:text-blue-400"
+                    size={17}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600"
                   />
 
                   <input
                     id="email"
                     type="email"
-                    autoComplete="email"
-                    placeholder="you@example.com"
                     value={email}
                     onChange={(e) =>
                       setEmail(e.target.value)
                     }
-                    className="h-13 w-full rounded-2xl border border-white/10 bg-black/30 pl-12 pr-4 text-sm text-white outline-none transition duration-300 placeholder:text-zinc-700 focus:border-blue-500/60 focus:bg-blue-500/[0.03] focus:ring-4 focus:ring-blue-500/10"
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    disabled={loading}
+                    className="h-13 w-full rounded-2xl border border-white/10 bg-white/[0.035] pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-zinc-700 focus:border-blue-500/50 focus:bg-blue-500/[0.035] disabled:cursor-not-allowed disabled:opacity-60"
                   />
 
                 </div>
-
               </div>
 
               {/* PASSWORD */}
               <div>
+                <label
+                  htmlFor="password"
+                  className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500"
+                >
+                  Password
+                </label>
 
-                <div className="mb-2 flex items-center justify-between">
-
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-semibold text-zinc-200"
-                  >
-                    Password
-                  </label>
-
-                  {password && (
-                    <span
-                      className={`text-xs font-semibold ${
-                        passwordStrength.score === 1
-                          ? "text-red-400"
-                          : passwordStrength.score === 2
-                            ? "text-yellow-400"
-                            : "text-emerald-400"
-                      }`}
-                    >
-                      {passwordStrength.label}
-                    </span>
-                  )}
-
-                </div>
-
-                <div className="group relative">
+                <div className="relative">
 
                   <LockKeyhole
-                    size={18}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 transition group-focus-within:text-blue-400"
+                    size={17}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600"
                   />
 
                   <input
@@ -453,31 +432,35 @@ export default function RegisterPage() {
                         ? "text"
                         : "password"
                     }
-                    autoComplete="new-password"
-                    placeholder="Create a password"
                     value={password}
                     onChange={(e) =>
                       setPassword(e.target.value)
                     }
-                    className="h-13 w-full rounded-2xl border border-white/10 bg-black/30 pl-12 pr-12 text-sm text-white outline-none transition duration-300 placeholder:text-zinc-700 focus:border-blue-500/60 focus:bg-blue-500/[0.03] focus:ring-4 focus:ring-blue-500/10"
+                    placeholder="Create a strong password"
+                    autoComplete="new-password"
+                    disabled={loading}
+                    className="h-13 w-full rounded-2xl border border-white/10 bg-white/[0.035] pl-11 pr-12 text-sm text-white outline-none transition placeholder:text-zinc-700 focus:border-blue-500/50 focus:bg-blue-500/[0.035] disabled:cursor-not-allowed disabled:opacity-60"
                   />
 
                   <button
                     type="button"
                     onClick={() =>
-                      setShowPassword(!showPassword)
+                      setShowPassword(
+                        !showPassword
+                      )
                     }
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 transition hover:text-white"
+                    disabled={loading}
                     aria-label={
                       showPassword
                         ? "Hide password"
                         : "Show password"
                     }
+                    className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-zinc-600 transition hover:bg-white/5 hover:text-zinc-300 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {showPassword ? (
-                      <EyeOff size={19} />
+                      <EyeOff size={17} />
                     ) : (
-                      <Eye size={19} />
+                      <Eye size={17} />
                     )}
                   </button>
 
@@ -487,55 +470,73 @@ export default function RegisterPage() {
                 {password && (
                   <div className="mt-3">
 
-                    <div className="flex gap-1.5">
+                    <div className="mb-2 flex items-center justify-between">
 
-                      {[1, 2, 3].map((level) => (
-                        <div
-                          key={level}
-                          className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                            passwordStrength.score >= level
-                              ? passwordStrength.score === 1
-                                ? "bg-red-500"
-                                : passwordStrength.score === 2
-                                  ? "bg-yellow-500"
-                                  : "bg-emerald-500"
-                              : "bg-white/10"
-                          }`}
-                        />
-                      ))}
+                      <span className="text-[11px] text-zinc-600">
+                        Password strength
+                      </span>
+
+                      <span
+                        className={`text-[11px] font-semibold ${
+                          passwordStrength.score === 1
+                            ? "text-red-400"
+                            : passwordStrength.score === 2
+                              ? "text-amber-400"
+                              : "text-emerald-400"
+                        }`}
+                      >
+                        {passwordStrength.label}
+                      </span>
 
                     </div>
 
-                    <p className="mt-2 text-[11px] text-zinc-600">
-                      Use 6+ characters. A longer password
-                      with numbers and symbols is stronger.
+                    <div className="flex gap-1.5">
+
+                      {[1, 2, 3].map(
+                        (level) => (
+                          <div
+                            key={level}
+                            className={`h-1 flex-1 rounded-full transition-all ${
+                              passwordStrength.score >=
+                              level
+                                ? level === 1
+                                  ? "bg-red-500"
+                                  : level === 2
+                                    ? "bg-amber-500"
+                                    : "bg-emerald-500"
+                                : "bg-white/10"
+                            }`}
+                          />
+                        )
+                      )}
+
+                    </div>
+
+                    <p className="mt-2 text-[11px] leading-5 text-zinc-600">
+                      Use at least 6 characters.
+                      A stronger password includes
+                      uppercase letters, numbers and
+                      symbols.
                     </p>
 
                   </div>
                 )}
-
               </div>
 
               {/* CONFIRM PASSWORD */}
               <div>
-
                 <label
                   htmlFor="confirmPassword"
-                  className="mb-2 block text-sm font-semibold text-zinc-200"
+                  className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500"
                 >
                   Confirm password
                 </label>
 
-                <div className="group relative">
+                <div className="relative">
 
                   <LockKeyhole
-                    size={18}
-                    className={`absolute left-4 top-1/2 -translate-y-1/2 transition ${
-                      confirmPassword &&
-                      password === confirmPassword
-                        ? "text-emerald-400"
-                        : "text-zinc-600"
-                    }`}
+                    size={17}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600"
                   />
 
                   <input
@@ -545,20 +546,16 @@ export default function RegisterPage() {
                         ? "text"
                         : "password"
                     }
-                    autoComplete="new-password"
-                    placeholder="Confirm your password"
                     value={confirmPassword}
                     onChange={(e) =>
                       setConfirmPassword(
                         e.target.value
                       )
                     }
-                    className={`h-13 w-full rounded-2xl border bg-black/30 pl-12 pr-12 text-sm text-white outline-none transition duration-300 placeholder:text-zinc-700 focus:ring-4 ${
-                      confirmPassword &&
-                      password === confirmPassword
-                        ? "border-emerald-500/40 focus:border-emerald-500/60 focus:ring-emerald-500/10"
-                        : "border-white/10 focus:border-blue-500/60 focus:bg-blue-500/[0.03] focus:ring-blue-500/10"
-                    }`}
+                    placeholder="Re-enter your password"
+                    autoComplete="new-password"
+                    disabled={loading}
+                    className="h-13 w-full rounded-2xl border border-white/10 bg-white/[0.035] pl-11 pr-12 text-sm text-white outline-none transition placeholder:text-zinc-700 focus:border-blue-500/50 focus:bg-blue-500/[0.035] disabled:cursor-not-allowed disabled:opacity-60"
                   />
 
                   <button
@@ -568,17 +565,18 @@ export default function RegisterPage() {
                         !showConfirmPassword
                       )
                     }
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 transition hover:text-white"
+                    disabled={loading}
                     aria-label={
                       showConfirmPassword
                         ? "Hide password"
                         : "Show password"
                     }
+                    className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-zinc-600 transition hover:bg-white/5 hover:text-zinc-300 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {showConfirmPassword ? (
-                      <EyeOff size={19} />
+                      <EyeOff size={17} />
                     ) : (
-                      <Eye size={19} />
+                      <Eye size={17} />
                     )}
                   </button>
 
@@ -586,79 +584,143 @@ export default function RegisterPage() {
 
                 {/* MATCH INDICATOR */}
                 {confirmPassword && (
-                  <div className="mt-2 flex items-center gap-1.5 text-xs">
+                  <div className="mt-2">
 
-                    {password === confirmPassword ? (
-                      <>
-                        <CheckCircle2
-                          size={13}
-                          className="text-emerald-400"
-                        />
-
-                        <span className="text-emerald-400">
-                          Passwords match
-                        </span>
-                      </>
+                    {password ===
+                    confirmPassword ? (
+                      <div className="flex items-center gap-2 text-[11px] text-emerald-400">
+                        <CheckCircle2 size={14} />
+                        Passwords match
+                      </div>
                     ) : (
-                      <span className="text-red-400">
+                      <div className="text-[11px] text-red-400">
                         Passwords do not match
-                      </span>
+                      </div>
                     )}
 
                   </div>
                 )}
+              </div>
+                            {/* LEGAL CONSENT */}
+              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+
+                <label className="flex cursor-pointer items-start gap-3">
+
+                  <input
+                    type="checkbox"
+                    checked={acceptedLegal}
+                    onChange={(e) =>
+                      setAcceptedLegal(
+                        e.target.checked
+                      )
+                    }
+                    disabled={loading}
+                    className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded border-white/20 bg-black/30 accent-blue-600 disabled:cursor-not-allowed"
+                  />
+
+                  <span className="text-[12px] leading-5 text-zinc-400">
+
+                    I agree to the{" "}
+
+                    <Link
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-blue-400 transition hover:text-cyan-400"
+                    >
+                      Terms & Conditions
+                    </Link>
+
+                    {" "}and acknowledge the{" "}
+
+                    <Link
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-blue-400 transition hover:text-cyan-400"
+                    >
+                      Privacy Policy
+                    </Link>
+
+                    .
+
+                  </span>
+
+                </label>
 
               </div>
 
               {/* SECURITY INFO */}
               <div className="flex items-start gap-3 rounded-2xl border border-blue-500/10 bg-blue-500/[0.035] px-4 py-3">
 
-                <ShieldCheck
-                  size={17}
-                  className="mt-0.5 shrink-0 text-blue-400"
-                />
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-blue-500/15 bg-blue-500/10">
 
-                <p className="text-[11px] leading-5 text-zinc-500">
-                  Your account is protected with secure
-                  authentication. Keep your password private
-                  and never share it with anyone.
-                </p>
+                  <ShieldCheck
+                    size={16}
+                    className="text-blue-400"
+                  />
+
+                </div>
+
+                <div>
+
+                  <p className="text-xs font-semibold text-zinc-300">
+                    Your information is protected
+                  </p>
+
+                  <p className="mt-1 text-[11px] leading-5 text-zinc-600">
+                    We use reasonable security measures
+                    to help protect your account and
+                    vehicle information.
+                  </p>
+
+                </div>
 
               </div>
 
               {/* ERROR */}
               {error && (
-                <div className="flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/[0.07] px-4 py-3.5 text-sm text-red-400">
+                <div className="rounded-2xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3">
 
-                  <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-red-500" />
-
-                  <p>{error}</p>
+                  <p className="text-sm leading-6 text-red-400">
+                    {error}
+                  </p>
 
                 </div>
               )}
 
               {/* SUCCESS */}
               {success && (
-                <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.07] px-4 py-3.5 text-sm text-emerald-400">
+                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3">
 
-                  <CheckCircle2
-                    size={18}
-                    className="mt-0.5 shrink-0"
-                  />
+                  <div className="flex items-start gap-3">
 
-                  <p>{success}</p>
+                    <CheckCircle2
+                      size={18}
+                      className="mt-0.5 shrink-0 text-emerald-400"
+                    />
+
+                    <p className="text-sm leading-6 text-emerald-400">
+                      {success}
+                    </p>
+
+                  </div>
 
                 </div>
               )}
 
-              {/* CREATE ACCOUNT */}
+              {/* CREATE ACCOUNT BUTTON */}
               <button
                 type="submit"
-                disabled={loading}
-                className="group relative flex h-14 w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 text-sm font-bold text-white shadow-xl shadow-blue-600/20 transition duration-300 hover:scale-[1.01] hover:shadow-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+                disabled={
+                  loading ||
+                  !acceptedLegal
+                }
+                className="group relative flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition duration-300 hover:scale-[1.01] hover:bg-blue-500 hover:shadow-blue-500/25 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
               >
 
-                <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition duration-700 group-hover:translate-x-full" />
+                {/* Button shine */}
+                <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
 
                 {loading ? (
                   <>
@@ -667,52 +729,54 @@ export default function RegisterPage() {
                       className="animate-spin"
                     />
 
-                    Creating your account...
+                    Creating account...
                   </>
                 ) : (
                   <>
-                    Create Account
+                    Create account
 
                     <ArrowRight
-                      size={18}
-                      className="transition duration-300 group-hover:translate-x-1"
+                      size={17}
+                      className="transition-transform duration-300 group-hover:translate-x-1"
                     />
                   </>
                 )}
 
               </button>
 
-              {/* LOGIN */}
-              <div className="border-t border-white/10 pt-5 text-center">
+              {/* MOBILE LOGIN */}
+              <div className="pt-2 text-center sm:hidden">
 
-                <p className="text-sm text-zinc-500">
-                  Already have a VEHIX account?
+                <p className="text-sm text-zinc-600">
+                  Already have an account?{" "}
+
+                  <Link
+                    href="/login"
+                    className="font-semibold text-blue-400 hover:text-cyan-400"
+                  >
+                    Sign in
+                  </Link>
                 </p>
-
-                <Link
-                  href="/login"
-                  className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-blue-400 transition hover:text-cyan-400"
-                >
-                  Sign in to VEHIX
-                  <ArrowRight size={16} />
-                </Link>
 
               </div>
 
             </form>
 
-            {/* FOOTER NOTE */}
-            <div className="mt-6 flex items-center justify-center gap-2 text-center text-[11px] text-zinc-600">
-
-              <ShieldCheck size={14} />
-
-              Secure VEHIX account registration
-
-            </div>
-
           </div>
+
         </div>
+
       </div>
+
+      {/* BOTTOM */}
+      <div className="relative z-10 pb-8 text-center">
+
+        <p className="text-[11px] text-zinc-700">
+          © {new Date().getFullYear()} VEHIX. Smart Vehicle Identity.
+        </p>
+
+      </div>
+
     </main>
   );
 }

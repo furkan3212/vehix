@@ -517,34 +517,77 @@ export default function QRVehiclePage() {
      DIRECT CALL OWNER
      ======================================================= */
 
-  const callOwner = () => {
-    const phone = normalizePhone(
-      profile?.phone
+  const callOwner = async () => {
+  if (!code) {
+    setActionState({
+      loading: false,
+      success: false,
+      error: "Invalid Vehix QR code.",
+    });
+
+    setSuccessAction("");
+    setShowActionMessage(true);
+    return;
+  }
+
+  try {
+    setActionState({
+      loading: true,
+      success: false,
+      error: "",
+    });
+
+    setSuccessAction("Call Owner");
+    setShowActionMessage(true);
+
+    const response = await fetch(
+      "/api/vehicle-call",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          qr_code: code,
+        }),
+      }
     );
 
-    if (!phone) {
-      setActionState({
-        loading: false,
-        success: false,
-        error:
-          "The vehicle owner has not configured a phone number yet.",
-      });
+    const result = await readApiResponse(
+      response
+    );
 
-      setSuccessAction("");
-      setShowActionMessage(true);
-
-      return;
+    if (
+      !response.ok ||
+      !result?.success
+    ) {
+      throw new Error(
+        result?.error ||
+          "Unable to connect the vehicle owner."
+      );
     }
 
-    /*
-     * Direct phone dialer.
-     *
-     * The number is NOT rendered visibly on the page.
-     */
+    setActionState({
+      loading: false,
+      success: true,
+      error: "",
+    });
+  } catch (error) {
+    console.error(
+      "Vehix owner call error:",
+      error
+    );
 
-    window.location.href = `tel:+${phone}`;
-  };
-
+    setActionState({
+      loading: false,
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to connect the vehicle owner.",
+    });
+  }
+};
   /* =======================================================
      DIRECT SMS
      * ======================================================= */
