@@ -32,32 +32,32 @@ const designs: Design[] = [
   {
     id: "design-01",
     name: "Classic Black",
-    image: "/qr-store/design-01.jpg",
+    image: "/qr-store/design-01.png",
   },
   {
     id: "design-02",
     name: "Sport Blue",
-    image: "/qr-store/design-02.jpg",
+    image: "/qr-store/design-02.png",
   },
   {
     id: "design-03",
     name: "Performance Red",
-    image: "/qr-store/design-03.jpg",
+    image: "/qr-store/design-03.png",
   },
   {
     id: "design-04",
     name: "Stealth",
-    image: "/qr-store/design-04.jpg",
+    image: "/qr-store/design-04.png",
   },
   {
     id: "design-05",
     name: "Carbon",
-    image: "/qr-store/design-05.jpg",
+    image: "/qr-store/design-05.png",
   },
   {
     id: "design-06",
     name: "Premium",
-    image: "/qr-store/design-06.jpg",
+    image: "/qr-store/design-06.png",
   },
 ];
 
@@ -290,7 +290,7 @@ export default function StickerStore() {
             title="Standard QR"
             price="₹499"
             description="Our clean and simple VEHIX QR sticker for everyday vehicle identity."
-            image="/qr-store/standard.jpg"
+            image="/qr-designs/standard-qr.png"
             icon={ShieldCheck}
             onClick={() =>
               selectProduct(
@@ -309,7 +309,7 @@ export default function StickerStore() {
             title="Design QR"
             price="₹599"
             description="Choose from our collection of premium VEHIX sticker designs."
-            image="/qr-store/design-cover.jpg"
+            image="/qr-designs/Design-qr.png"
             icon={Star}
             onClick={() =>
               selectProduct(
@@ -329,7 +329,7 @@ export default function StickerStore() {
             title="Custom Design"
             price="₹699"
             description="Have your own design? Upload it and we'll create your customized VEHIX sticker."
-            image="/qr-store/custom.jpg"
+            image="/qr-store/custom.png"
             icon={ImagePlus}
             onClick={() =>
               selectProduct(
@@ -406,7 +406,7 @@ export default function StickerStore() {
                     <img
                       src={design.image}
                       alt={design.name}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      className="h-full w-full object-contain p-3 transition duration-500 group-hover:scale-[1.03]"
                     />
 
                     {selected && (
@@ -820,7 +820,7 @@ function ProductCard({
         <img
           src={image}
           alt={title}
-          className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+          className="h-full w-full object-contain p-4 transition duration-700 group-hover:scale-[1.03]"
         />
       </div>
 

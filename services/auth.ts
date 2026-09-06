@@ -5,18 +5,28 @@ export interface AuthResponse {
   error: string | null;
 }
 
+const LEGAL_VERSION = "2026-08-31";
+
 export async function registerUser(
   email: string,
   password: string,
   fullName: string
 ): Promise<AuthResponse> {
   try {
+    const legalAcceptedAt = new Date().toISOString();
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
+
+          // Legal consent
+          terms_accepted: true,
+          privacy_accepted: true,
+          legal_version: LEGAL_VERSION,
+          legal_accepted_at: legalAcceptedAt,
         },
       },
     });
@@ -27,10 +37,13 @@ export async function registerUser(
       success: true,
       error: null,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       success: false,
-      error: err.message,
+      error:
+        err instanceof Error
+          ? err.message
+          : "Unable to create your account.",
     };
   }
 }
@@ -52,10 +65,13 @@ export async function loginUser(
       success: true,
       error: null,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       success: false,
-      error: err.message,
+      error:
+        err instanceof Error
+          ? err.message
+          : "Unable to sign in.",
     };
   }
 }

@@ -37,7 +37,6 @@ type QRData = {
 
 type VehicleData = {
   id: string;
-  user_id: string;
   vehicle_number: string;
   brand: string;
   model: string;
@@ -322,21 +321,17 @@ export default function QRVehiclePage() {
           .eq("qr_code", code.trim().toUpperCase())
           .maybeSingle();
 
-        if (qrError) {
-          console.error(
-            "QR lookup error:",
-            qrError
-          );
+       if (qrError) {
+  console.error("QR LOOKUP ERROR:", qrError);
 
-          if (!cancelled) {
-            setErrorMessage(
-              "Unable to verify this Vehix QR code."
-            );
-            setLoading(false);
-          }
+  if (!cancelled) {
+    setErrorMessage(`QR lookup failed: ${qrError.message}`);
+    setLoading(false);
+  }
 
-          return;
-        }
+  return;
+}
+        
 
         if (!qrData) {
           if (!cancelled) {
@@ -380,10 +375,13 @@ export default function QRVehiclePage() {
 
         /*
          * ---------------------------------------------------
-         * STEP 4: Load vehicle
+         * STEP 4: Load public vehicle information
          *
-         * user_id is important because we use it to load
-         * the owner's contact information.
+         * IMPORTANT:
+         * Never query the private `vehicles` table from the
+         * public QR page. Anonymous visitors must only receive
+         * the fields exposed by the controlled `vehicle_public`
+         * view.
          * ---------------------------------------------------
          */
 
@@ -391,28 +389,23 @@ export default function QRVehiclePage() {
           data: vehicleData,
           error: vehicleError,
         } = await supabase
-          .from("vehicles")
+          .from("vehicle_public")
           .select(
-            "id, user_id, vehicle_number, brand, model, year, colour, vehicle_type, photo_url"
+            "id, vehicle_number, brand, model, year, colour, vehicle_type, photo_url, nickname"
           )
           .eq("id", qrData.vehicle_id)
           .maybeSingle();
 
-        if (vehicleError) {
-          console.error(
-            "Vehicle lookup error:",
-            vehicleError
-          );
+      if (vehicleError) {
+  console.error("VEHICLE LOOKUP ERROR:", vehicleError);
 
-          if (!cancelled) {
-            setErrorMessage(
-              "Unable to load the verified vehicle information."
-            );
-            setLoading(false);
-          }
+  if (!cancelled) {
+    setErrorMessage(`Vehicle lookup failed: ${vehicleError.message}`);
+    setLoading(false);
+  }
 
-          return;
-        }
+  return;
+}
 
         if (!vehicleData) {
           if (!cancelled) {
@@ -444,47 +437,45 @@ export default function QRVehiclePage() {
          * contact fields required by the public QR actions.
          */
 
-        if (vehicleData.user_id) {
-          const {
-            data: contactData,
-            error: contactError,
-          } = await supabase.rpc(
-            "get_public_vehicle_contact",
-            {
-              p_qr_code: qrData.qr_code,
-            }
+        const {
+          data: contactData,
+          error: contactError,
+        } = await supabase.rpc(
+          "get_public_vehicle_contact",
+          {
+            p_qr_code: qrData.qr_code,
+          }
+        );
+
+        if (contactError) {
+          console.warn(
+            "Vehix public contact lookup:",
+            contactError
           );
 
-          if (contactError) {
-            console.warn(
-              "Vehix public contact lookup:",
-              contactError
-            );
-
-            /*
-             * Do not break vehicle verification if the
-             * optional contact lookup fails.
-             */
-            if (!cancelled) {
-              setProfile(null);
-            }
-          } else if (!cancelled && contactData) {
-            /*
-             * Keep the existing ProfileData shape so the
-             * Call, SMS, WhatsApp and Emergency functions
-             * below do not need to change.
-             */
-            setProfile({
-              id: vehicleData.user_id,
-              full_name: null,
-              phone: contactData.phone ?? null,
-              whatsapp: contactData.whatsapp ?? null,
-              emergency_name:
-                contactData.emergency_name ?? null,
-              emergency_phone:
-                contactData.emergency_phone ?? null,
-            });
+          /*
+           * Do not break vehicle verification if the
+           * optional contact lookup fails.
+           */
+          if (!cancelled) {
+            setProfile(null);
           }
+        } else if (!cancelled && contactData) {
+          /*
+           * The RPC is the only public path to private
+           * contact information. Do not expose user_id
+           * through the public vehicle view.
+           */
+          setProfile({
+            id: "public-contact",
+            full_name: null,
+            phone: contactData.phone ?? null,
+            whatsapp: contactData.whatsapp ?? null,
+            emergency_name:
+              contactData.emergency_name ?? null,
+            emergency_phone:
+              contactData.emergency_phone ?? null,
+          });
         }
 
         if (!cancelled) {

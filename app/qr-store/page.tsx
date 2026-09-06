@@ -62,6 +62,7 @@ const designs = [
   {
     id: "performance-red",
     name: "Performance Red",
+    image: "/qr-store/design-01.png",
     type: "design",
     className:
       "bg-gradient-to-br from-[#080b12] via-[#1a1118] to-[#450814]",
@@ -71,6 +72,7 @@ const designs = [
   {
     id: "electric-blue",
     name: "Electric Blue",
+    image: "/qr-store/design-02.png",
     type: "design",
     className:
       "bg-gradient-to-br from-[#050b15] via-[#071b35] to-[#063b68]",
@@ -80,6 +82,7 @@ const designs = [
   {
     id: "stealth-carbon",
     name: "Stealth Carbon",
+    image: "/qr-store/design-03.png",
     type: "design",
     className:
       "bg-gradient-to-br from-[#080808] via-[#181818] to-[#292929]",
@@ -89,6 +92,7 @@ const designs = [
   {
     id: "midnight-gold",
     name: "Midnight Gold",
+    image: "/qr-store/design-04.png",
     type: "design",
     className:
       "bg-gradient-to-br from-[#080806] via-[#211b0b] to-[#725c18]",
@@ -98,6 +102,7 @@ const designs = [
   {
     id: "urban-black",
     name: "Urban Black",
+    image: "/qr-store/design-05.png",
     type: "design",
     className:
       "bg-gradient-to-br from-[#050505] via-[#111111] to-[#222222]",
@@ -107,6 +112,7 @@ const designs = [
   {
     id: "stealth-silver",
     name: "Stealth Silver",
+    image: "/qr-store/design-06.png",
     type: "design",
     className:
       "bg-gradient-to-br from-[#15171a] via-[#35383d] to-[#0a0b0d]",
@@ -582,25 +588,16 @@ export default function QRStorePage() {
                   )}
 
                   <div
-                    className={`relative flex aspect-square items-center justify-center overflow-hidden rounded-xl ${design.className}`}
+                    className={`relative flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-black/30 ${design.className}`}
                   >
-                    <div className="absolute inset-0 opacity-20">
-                      <div className="absolute -left-8 top-1/2 h-20 w-40 rotate-[-25deg] bg-blue-500 blur-2xl" />
-                    </div>
+                    <div className="absolute inset-0 bg-black/10" />
 
-                    <div className="relative flex h-[68%] w-[68%] rotate-[-3deg] flex-col items-center justify-center rounded-[28%] border border-white/20 bg-black/50 shadow-2xl transition group-hover:rotate-0">
-                      <span className="text-[8px] font-black tracking-[0.25em] text-white">
-                        VEHIX
-                      </span>
-
-                      <div className="mt-2 rounded-md bg-white p-1">
-                        <QrCode className="h-12 w-12 text-black" />
-                      </div>
-
-                      <span className="mt-1 text-[5px] font-bold uppercase tracking-widest text-white/60">
-                        Scan to connect
-                      </span>
-                    </div>
+                    <img
+                      src={design.image}
+                      alt={`${design.name} VEHIX QR design`}
+                      className="relative h-full w-full object-contain p-2 transition duration-500 group-hover:scale-[1.03]"
+                      loading="lazy"
+                    />
                   </div>
 
                   <p className="mt-3 text-xs font-bold">
