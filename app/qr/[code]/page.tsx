@@ -630,15 +630,21 @@ export default function QRVehiclePage() {
   }, [code]);
 
   const callOwner = () => {
-    setSent(false);
-    setErrorMessage("");
-    setContactMode("call");
-    setReason("other");
-    setMessage(
-      "I would like to speak with the vehicle owner regarding this vehicle."
-    );
-    setSenderContact("");
-    setShowContact(true);
+    const phone = normalizePhone(profile?.phone);
+
+    if (!phone) {
+      setActionState({
+        loading: false,
+        success: false,
+        error:
+          "The vehicle owner has not configured a phone number for calls yet.",
+      });
+      setSuccessAction("Call Owner");
+      setShowActionMessage(true);
+      return;
+    }
+
+    window.location.href = `tel:+${phone}`;
   };
 
   const sendSMS = () => {
@@ -1319,17 +1325,17 @@ export default function QRVehiclePage() {
                 </h2>
 
                 <p className="mt-1 max-w-xl text-sm leading-5 text-zinc-500">
-                  Choose a secure way to notify or contact the registered owner.
+                  Call the vehicle owner directly from your phone.
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={openContactForm}
+                onClick={callOwner}
                 className="flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 py-4 text-sm font-black text-white shadow-lg shadow-red-950/30 transition hover:bg-red-500 active:scale-[0.98] sm:w-auto"
               >
-                <Phone size={18} />
-                Contact Owner
+                <PhoneCall size={18} />
+                Call Owner
               </button>
             </div>
 
