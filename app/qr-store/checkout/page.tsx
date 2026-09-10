@@ -49,7 +49,12 @@ type CheckoutData = {
   quantity: number;
 };
 
-const STANDARD_QR_PRICE = 499;
+const PRODUCT_PRICES: Record<string, number> = {
+  basic: 499,
+  standard: 499,
+  design: 599,
+  custom: 699,
+};
 
 function CheckoutPageContent() {
   const router = useRouter();
@@ -84,13 +89,27 @@ function CheckoutPageContent() {
 
   const productInfo = useMemo(() => {
     switch (product) {
-      case "basic":
+      case "design":
+        return {
+          name: "Design QR",
+          description: "Premium Vehix QR sticker design.",
+          price: PRODUCT_PRICES.design,
+        };
+
+      case "custom":
+        return {
+          name: "Custom Design",
+          description: "Personalized Vehix QR sticker.",
+          price: PRODUCT_PRICES.custom,
+        };
+
       case "standard":
+      case "basic":
       default:
         return {
           name: "Standard QR",
           description: "Vehix Smart QR Identity",
-          price: STANDARD_QR_PRICE,
+          price: PRODUCT_PRICES.standard,
         };
     }
   }, [product]);
@@ -344,7 +363,7 @@ function CheckoutPageContent() {
       pincode: pincode.trim(),
 
       product: productInfo.name,
-      amount: STANDARD_QR_PRICE,
+      amount: productInfo.price,
       quantity: 1,
     };
 
@@ -372,11 +391,11 @@ function CheckoutPageContent() {
      * and create the Razorpay order.
      *
      * IMPORTANT:
-     * The server should independently enforce ₹499.
+     * The server should independently enforce the selected product price.
      */
 
     router.push(
-      `/qr-store/payment?product=basic&vehicle=${encodeURIComponent(
+      `/qr-store/payment?product=${encodeURIComponent(product)}&vehicle=${encodeURIComponent(
         vehicleId
       )}`
     );
@@ -868,7 +887,7 @@ function CheckoutPageContent() {
                   </span>
 
                   <span className="font-semibold text-slate-300">
-                    ₹{STANDARD_QR_PRICE}
+                    ₹{productInfo.price}
                   </span>
                 </div>
 
@@ -890,7 +909,7 @@ function CheckoutPageContent() {
                       </p>
 
                       <p className="mt-1 text-3xl font-black">
-                        ₹{STANDARD_QR_PRICE}
+                        ₹{productInfo.price}
                       </p>
                     </div>
 

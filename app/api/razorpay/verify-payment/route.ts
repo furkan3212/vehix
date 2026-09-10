@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
-import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";
 
@@ -12,34 +11,24 @@ export async function POST(req: Request) {
        ===================================================== */
 
     const razorpayKey =
-      process.env.RAZORPAY_KEY_ID?.trim();
+      process.env.RAZORPAY_KEY_ID;
 
     const razorpaySecret =
-      process.env.RAZORPAY_KEY_SECRET?.trim();
+      process.env.RAZORPAY_KEY_SECRET;
 
     const supabaseUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+      process.env.NEXT_PUBLIC_SUPABASE_URL;
 
     const supabaseAnonKey =
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     const supabaseServiceKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-
-    const resendApiKey =
-  process.env.RESEND_API_KEY?.trim();
-
-const adminEmail =
-  process.env.VEHIX_ADMIN_EMAIL?.trim();  
+      process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (
       !razorpayKey ||
       !razorpaySecret
     ) {
-      console.error(
-        "Razorpay environment variables are missing."
-      );
-
       return NextResponse.json(
         {
           success: false,
@@ -55,10 +44,6 @@ const adminEmail =
       !supabaseAnonKey ||
       !supabaseServiceKey
     ) {
-      console.error(
-        "Supabase environment variables are missing."
-      );
-
       return NextResponse.json(
         {
           success: false,
@@ -91,34 +76,12 @@ const adminEmail =
       authorization.replace(
         /^Bearer\s+/i,
         ""
-      ).trim();
-
-    if (!accessToken) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Your login session is invalid.",
-        },
-        { status: 401 }
       );
-    }
-
-    /*
-     * Client using the public/anon key only
-     * for validating the customer's access token.
-     */
 
     const supabaseAuth =
       createClient(
         supabaseUrl,
-        supabaseAnonKey,
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-          },
-        }
+        supabaseAnonKey
       );
 
     const {
@@ -135,11 +98,6 @@ const adminEmail =
       authError ||
       !user
     ) {
-      console.error(
-        "Customer authentication failed:",
-        authError
-      );
-
       return NextResponse.json(
         {
           success: false,
@@ -151,7 +109,7 @@ const adminEmail =
     }
 
     /* =====================================================
-       ADMIN SUPABASE CLIENT
+       ADMIN CLIENT
        ===================================================== */
 
     const supabaseAdmin =
@@ -189,49 +147,12 @@ const adminEmail =
       state,
       pincode,
 
-      product = "basic",
+      product = "standard",
       amount,
     } = body;
 
-    console.log(
-      "======================================"
-    );
-
-    console.log(
-      "VEHIX VERIFY RAZORPAY PAYMENT"
-    );
-
-    console.log(
-      "user_id:",
-      user.id
-    );
-
-    console.log(
-      "vehicle_id:",
-      vehicle_id
-    );
-
-    console.log(
-      "razorpay_order_id:",
-      razorpay_order_id
-    );
-
-    console.log(
-      "razorpay_payment_id:",
-      razorpay_payment_id
-    );
-
-    console.log(
-      "product:",
-      product
-    );
-
-    console.log(
-      "======================================"
-    );
-
     /* =====================================================
-       REQUIRED RAZORPAY DATA
+       REQUIRED DATA
        ===================================================== */
 
     if (
@@ -248,10 +169,6 @@ const adminEmail =
         { status: 400 }
       );
     }
-
-    /* =====================================================
-       REQUIRED VEHICLE
-       ===================================================== */
 
     if (!vehicle_id) {
       return NextResponse.json(
@@ -276,13 +193,13 @@ const adminEmail =
         .from("vehicles")
         .select(
           `
-          id,
-          user_id,
-          vehicle_number,
-          brand,
-          model,
-          colour,
-          vehicle_type
+            id,
+            user_id,
+            vehicle_number,
+            brand,
+            model,
+            colour,
+            vehicle_type
           `
         )
         .eq(
@@ -295,23 +212,10 @@ const adminEmail =
         )
         .maybeSingle();
 
-    if (vehicleError) {
-      console.error(
-        "Vehicle verification error:",
-        vehicleError
-      );
-
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Unable to verify the selected vehicle.",
-        },
-        { status: 500 }
-      );
-    }
-
-    if (!vehicle) {
+    if (
+      vehicleError ||
+      !vehicle
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -357,10 +261,6 @@ const adminEmail =
         receivedBuffer
       )
     ) {
-      console.error(
-        "Razorpay signature verification failed."
-      );
-
       return NextResponse.json(
         {
           success: false,
@@ -371,27 +271,22 @@ const adminEmail =
       );
     }
 
-    console.log(
-      "Razorpay signature verified successfully."
-    );
-
     /* =====================================================
-       PREVENT DUPLICATE PAYMENT PROCESSING
+       PREVENT DUPLICATE PROCESSING
        ===================================================== */
 
     const {
       data: existingOrder,
-      error:
-        existingOrderError,
+      error: existingOrderError,
     } =
       await supabaseAdmin
         .from("orders")
         .select(
           `
-          id,
-          order_number,
-          payment_status,
-          qr_inventory_id
+            id,
+            order_number,
+            payment_status,
+            qr_inventory_id
           `
         )
         .eq(
@@ -417,11 +312,6 @@ const adminEmail =
     }
 
     if (existingOrder) {
-      console.log(
-        "Payment was already processed:",
-        existingOrder.id
-      );
-
       return NextResponse.json({
         success: true,
 
@@ -436,21 +326,12 @@ const adminEmail =
 
         qr_inventory_id:
           existingOrder.qr_inventory_id,
-
-        payment_id:
-          razorpay_payment_id,
       });
     }
 
     /* =====================================================
-       VERIFY PRODUCT PRICE
+       VERIFY RAZORPAY ORDER AMOUNT
        ===================================================== */
-
-    /*
-     * Standard QR is ₹499.
-     *
-     * The old ₹339 calculation is intentionally removed.
-     */
 
     const basePrices: Record<
       string,
@@ -458,15 +339,15 @@ const adminEmail =
     > = {
       basic: 499,
       standard: 499,
+      design: 599,
+      custom: 699,
     };
 
-    const selectedProduct =
-      typeof product === "string"
-        ? product.toLowerCase()
-        : "basic";
+    const normalizedProduct =
+      product === "basic" ? "standard" : product;
 
     const basePrice =
-      basePrices[selectedProduct];
+      basePrices[normalizedProduct];
 
     if (!basePrice) {
       return NextResponse.json(
@@ -479,12 +360,13 @@ const adminEmail =
       );
     }
 
+    /*
+     * The first version of the store is Standard QR.
+     * We calculate the expected amount server-side.
+     */
+
     const expectedAmount =
       basePrice * 100;
-
-    /* =====================================================
-       RAZORPAY AUTH
-       ===================================================== */
 
     const auth =
       Buffer.from(
@@ -492,10 +374,6 @@ const adminEmail =
       ).toString(
         "base64"
       );
-
-    /* =====================================================
-       VERIFY RAZORPAY ORDER
-       ===================================================== */
 
     const razorpayOrderResponse =
       await fetch(
@@ -533,26 +411,11 @@ const adminEmail =
       );
     }
 
-    /* =====================================================
-       VERIFY ORDER AMOUNT
-       ===================================================== */
-
     if (
       Number(
         razorpayOrder.amount
       ) !== expectedAmount
     ) {
-      console.error(
-        "Razorpay amount mismatch:",
-        {
-          expected:
-            expectedAmount,
-
-          received:
-            razorpayOrder.amount,
-        }
-      );
-
       return NextResponse.json(
         {
           success: false,
@@ -562,11 +425,6 @@ const adminEmail =
         { status: 400 }
       );
     }
-
-    console.log(
-      "Razorpay order amount verified: ₹",
-      basePrice
-    );
 
     /* =====================================================
        VERIFY PAYMENT WITH RAZORPAY
@@ -593,11 +451,6 @@ const adminEmail =
     if (
       !paymentResponse.ok
     ) {
-      console.error(
-        "Razorpay payment lookup error:",
-        payment
-      );
-
       return NextResponse.json(
         {
           success: false,
@@ -607,10 +460,6 @@ const adminEmail =
         { status: 500 }
       );
     }
-
-    /* =====================================================
-       VERIFY PAYMENT ORDER
-       ===================================================== */
 
     if (
       payment.order_id !==
@@ -626,28 +475,9 @@ const adminEmail =
       );
     }
 
-    /* =====================================================
-       VERIFY PAYMENT AMOUNT
-       ===================================================== */
-
-    if (
-      Number(
-        payment.amount
-      ) !== expectedAmount
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Payment amount mismatch.",
-        },
-        { status: 400 }
-      );
+    if (Number(payment.amount) !== expectedAmount) {
+      return NextResponse.json({ success: false, error: "Captured payment amount does not match the Vehix product price." }, { status: 400 });
     }
-
-    /* =====================================================
-       VERIFY PAYMENT STATUS
-       ===================================================== */
 
     if (
       payment.status !==
@@ -663,17 +493,9 @@ const adminEmail =
       );
     }
 
-    console.log(
-      "Razorpay payment captured successfully."
-    );
-
     /* =====================================================
        COMPLETE ORDER
        ===================================================== */
-
-    console.log(
-      "Calling complete_qr_order..."
-    );
 
     const {
       data: result,
@@ -726,16 +548,17 @@ const adminEmail =
             ).trim(),
 
           p_product:
-            selectedProduct ===
-            "basic"
+            normalizedProduct === "standard"
               ? "Standard QR"
-              : selectedProduct,
+              : normalizedProduct === "design"
+                ? "Design QR"
+                : "Custom Design",
 
           /*
-           * RPC expects rupees.
+           * The RPC expects rupees.
            */
           p_unit_price:
-            basePrice,
+            expectedAmount / 100,
 
           p_payment_id:
             razorpay_payment_id,
@@ -745,41 +568,10 @@ const adminEmail =
         }
       );
 
-    /* =====================================================
-       RPC ERROR
-       ===================================================== */
-
     if (rpcError) {
       console.error(
-        "======================================"
-      );
-
-      console.error(
-        "complete_qr_order RPC ERROR"
-      );
-
-      console.error(
-        "message:",
-        rpcError.message
-      );
-
-      console.error(
-        "details:",
-        rpcError.details
-      );
-
-      console.error(
-        "hint:",
-        rpcError.hint
-      );
-
-      console.error(
-        "code:",
-        rpcError.code
-      );
-
-      console.error(
-        "======================================"
+        "complete_qr_order RPC error:",
+        rpcError
       );
 
       return NextResponse.json(
@@ -794,13 +586,8 @@ const adminEmail =
     }
 
     /* =====================================================
-       READ RESULT
+       SUCCESS
        ===================================================== */
-
-    console.log(
-      "complete_qr_order result:",
-      result
-    );
 
     const orderId =
       result?.order_id;
@@ -813,240 +600,6 @@ const adminEmail =
 
     const qrInventoryId =
       result?.qr_inventory_id;
-    /* =====================================================
-   SEND ADMIN NEW ORDER EMAIL
-   ===================================================== */
-
-if (
-  resendApiKey &&
-  adminEmail
-) {
-  try {
-    const resend =
-      new Resend(
-        resendApiKey
-      );
-
-    const customerName =
-      String(
-        full_name || "Customer"
-      ).trim();
-
-    const customerEmail =
-      String(
-        email ||
-          user.email ||
-          "Not provided"
-      ).trim();
-
-    const customerPhone =
-      String(
-        phone ||
-          "Not provided"
-      ).trim();
-
-    const vehicleNumber =
-      vehicle.vehicle_number ||
-      "Not provided";
-
-    const vehicleName =
-      [
-        vehicle.brand,
-        vehicle.model,
-      ]
-        .filter(Boolean)
-        .join(" ") ||
-      "Vehicle";
-
-    const formattedAmount =
-      Number(
-        amount
-      ) || basePrice;
-
-    await resend.emails.send({
-      from:
-        "Vehix <onboarding@resend.dev>",
-
-      to:
-        adminEmail,
-
-      subject:
-        `🚨 New Vehix Order — ${orderNumber}`,
-
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:680px;margin:auto;background:#ffffff;color:#111827;padding:32px;border-radius:16px;">
-
-          <h1 style="margin:0 0 8px;font-size:28px;">
-            🚨 New Vehix Order
-          </h1>
-
-          <p style="color:#6b7280;margin-top:0;">
-            A new Vehix QR order has been successfully paid and confirmed.
-          </p>
-
-          <div style="margin-top:24px;padding:20px;background:#f3f4f6;border-radius:12px;">
-            <p style="margin:0 0 8px;">
-              <strong>Order Number:</strong>
-              ${orderNumber || "Not available"}
-            </p>
-
-            <p style="margin:0 0 8px;">
-              <strong>Product:</strong>
-              ${product === "basic" ? "Standard QR" : product}
-            </p>
-
-            <p style="margin:0;">
-              <strong>Amount Paid:</strong>
-              ₹${formattedAmount.toLocaleString("en-IN")}
-            </p>
-          </div>
-
-          <h2 style="margin-top:28px;">
-            Customer
-          </h2>
-
-          <p>
-            <strong>Name:</strong>
-            ${customerName}
-          </p>
-
-          <p>
-            <strong>Email:</strong>
-            ${customerEmail}
-          </p>
-
-          <p>
-            <strong>Phone:</strong>
-            ${customerPhone}
-          </p>
-
-          <h2 style="margin-top:28px;">
-            Vehicle
-          </h2>
-
-          <p>
-            <strong>Vehicle:</strong>
-            ${vehicleName}
-          </p>
-
-          <p>
-            <strong>Registration:</strong>
-            ${vehicleNumber}
-          </p>
-
-          <h2 style="margin-top:28px;">
-            QR Assignment
-          </h2>
-
-          <p>
-            <strong>QR Code:</strong>
-            ${qrCode || "Not available"}
-          </p>
-
-          <p>
-            <strong>QR Inventory ID:</strong>
-            ${qrInventoryId || "Not available"}
-          </p>
-
-          <p>
-            <strong>Payment ID:</strong>
-            ${razorpay_payment_id}
-          </p>
-
-          <p>
-            <strong>Razorpay Order ID:</strong>
-            ${razorpay_order_id}
-          </p>
-
-          <div style="margin-top:32px;padding:16px;background:#ecfdf5;border-radius:12px;color:#065f46;">
-            <strong>Payment Status: PAID</strong>
-            <br />
-            <span>Order Status: CONFIRMED</span>
-          </div>
-
-          <p style="margin-top:32px;color:#9ca3af;font-size:12px;">
-            This is an automated notification from Vehix.
-          </p>
-
-        </div>
-      `,
-    });
-
-    console.log(
-      "Admin order email sent successfully."
-    );
-  } catch (emailError) {
-    /*
-     * VERY IMPORTANT:
-     *
-     * If email fails, we DO NOT fail the customer's
-     * successful payment/order.
-     */
-    console.error(
-      "Admin order email failed:",
-      emailError
-    );
-  }
-}
-    /* =====================================================
-       CHECK ORDER RESULT
-       ===================================================== */
-
-    if (!orderId) {
-      console.error(
-        "complete_qr_order did not return an order ID."
-      );
-
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Payment was verified, but the Vehix order could not be created.",
-        },
-        { status: 500 }
-      );
-    }
-
-    /* =====================================================
-       SUCCESS
-       ===================================================== */
-
-    console.log(
-      "======================================"
-    );
-
-    console.log(
-      "VEHIX ORDER COMPLETED SUCCESSFULLY"
-    );
-
-    console.log(
-      "order_id:",
-      orderId
-    );
-
-    console.log(
-      "order_number:",
-      orderNumber
-    );
-
-    console.log(
-      "qr_inventory_id:",
-      qrInventoryId
-    );
-
-    console.log(
-      "qr_code:",
-      qrCode
-    );
-
-    console.log(
-      "payment_id:",
-      razorpay_payment_id
-    );
-
-    console.log(
-      "======================================"
-    );
 
     return NextResponse.json({
       success: true,
@@ -1095,28 +648,15 @@ if (
     });
   } catch (error) {
     console.error(
-      "======================================"
-    );
-
-    console.error(
-      "VERIFY PAYMENT UNEXPECTED ERROR"
-    );
-
-    console.error(
+      "Verify payment error:",
       error
-    );
-
-    console.error(
-      "======================================"
     );
 
     return NextResponse.json(
       {
         success: false,
         error:
-          error instanceof Error
-            ? error.message
-            : "Unable to complete payment verification.",
+          "Unable to complete payment verification.",
       },
       { status: 500 }
     );

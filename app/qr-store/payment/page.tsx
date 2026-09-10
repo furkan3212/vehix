@@ -76,12 +76,39 @@ type RazorpayResponse = {
    PRODUCT
    ========================================================= */
 
-const PRODUCT_PRICE = 499;
-
-const productInfo = {
-  name: "Standard QR",
-  description: "Vehix Smart Vehicle Identity QR sticker.",
+const PRODUCT_PRICES: Record<string, number> = {
+  basic: 499,
+  standard: 499,
+  design: 599,
+  custom: 699,
 };
+
+function getProductInfo(productId: string) {
+  switch (productId) {
+    case "design":
+      return {
+        name: "Design QR",
+        description: "Premium Vehix QR sticker design.",
+        price: PRODUCT_PRICES.design,
+      };
+
+    case "custom":
+      return {
+        name: "Custom Design",
+        description: "Personalized Vehix QR sticker.",
+        price: PRODUCT_PRICES.custom,
+      };
+
+    case "standard":
+    case "basic":
+    default:
+      return {
+        name: "Standard QR",
+        description: "Vehix Smart Vehicle Identity QR sticker.",
+        price: PRODUCT_PRICES.standard,
+      };
+  }
+}
 
 /* =========================================================
    RAZORPAY SCRIPT
@@ -155,7 +182,8 @@ function PaymentPageContent() {
   /*
    * Standard Vehix QR is always ₹499.
    */
-  const total = PRODUCT_PRICE;
+  const product = getProductInfo(productId);
+  const total = product.price;
 
   const quantity = 1;
 
@@ -221,8 +249,8 @@ function PaymentPageContent() {
   const displayProduct = useMemo(() => {
     return {
       id: productId,
-      name: productInfo.name,
-      price: PRODUCT_PRICE,
+      name: product.name,
+      price: product.price,
     };
   }, [productId]);
 
@@ -521,6 +549,17 @@ function PaymentPageContent() {
       }
 
       /* -----------------------------------------------
+         GET CURRENT SUPABASE SESSION
+         ----------------------------------------------- */
+
+      const { data: { session }, error: sessionError } =
+        await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        throw new Error("Your login session has expired. Please log in again.");
+      }
+
+      /* -----------------------------------------------
          CREATE RAZORPAY ORDER
          ----------------------------------------------- */
 
@@ -550,6 +589,8 @@ function PaymentPageContent() {
             headers: {
               "Content-Type":
                 "application/json",
+              Authorization:
+                `Bearer ${session.access_token}`,
             },
 
             body: JSON.stringify({
@@ -617,14 +658,6 @@ function PaymentPageContent() {
                     .replace(/\D/g, "")
                     .trim(),
               },
-
-              /*
-               * Standard QR price.
-               *
-               * The backend remains responsible
-               * for validating the actual amount.
-               */
-              amount: total,
 
               receipt:
                 `vehix_${Date.now()}`,
@@ -748,7 +781,7 @@ if (!razorpayKey) {
           "VEHIX",
 
         description:
-          "Vehix Standard QR",
+          product.description,
 
         order_id:
           razorpayOrderId,
@@ -963,7 +996,7 @@ if (!razorpayKey) {
                   .trim(),
 
               product:
-                "basic",
+                productId,
 
               amount:
                 total,

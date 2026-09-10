@@ -2,851 +2,584 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-
 import {
   ArrowRight,
+  ArrowUpRight,
   ShieldCheck,
   QrCode,
   MapPin,
   PhoneCall,
-  Star,
-  Sparkles,
+  FileText,
   CheckCircle2,
   Car,
+  LockKeyhole,
+  Smartphone,
 } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden bg-[#030712] pt-32 pb-24 text-white">
+    <section
+      id="hero"
+      className="relative min-h-screen overflow-hidden bg-[#030712] pt-32 text-white"
+    >
+      {/* =========================================================
+          BACKGROUND
+      ========================================================= */}
 
-      {/* Background Glow */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-48 -top-40 h-[600px] w-[600px] rounded-full bg-blue-600/[0.13] blur-[160px]" />
 
-      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute right-[-180px] top-[10%] h-[620px] w-[620px] rounded-full bg-cyan-500/[0.09] blur-[180px]" />
 
-        <div className="absolute -left-40 top-0 h-[450px] w-[450px] rounded-full bg-blue-600/20 blur-[170px]" />
-
-        <div className="absolute right-0 top-20 h-[550px] w-[550px] rounded-full bg-cyan-500/10 blur-[190px]" />
-
-        <div className="absolute bottom-0 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[160px]" />
-
+        <div className="absolute bottom-[-220px] left-[35%] h-[500px] w-[500px] rounded-full bg-blue-500/[0.07] blur-[160px]" />
       </div>
 
-      {/* Grid */}
+      {/* Subtle technical grid */}
 
-      <div className="absolute inset-0 opacity-[0.04]">
-
+      <div className="pointer-events-none absolute inset-0 opacity-[0.035]">
         <div
           className="h-full w-full"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px)",
-            backgroundSize: "55px 55px",
+              "linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px)",
+            backgroundSize: "64px 64px",
           }}
         />
-
       </div>
 
-      <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-20 px-6 lg:flex-row lg:items-center">
+      {/* Top radial highlight */}
 
-        {/* LEFT */}
+      <div className="pointer-events-none absolute left-1/2 top-0 h-[420px] w-[900px] -translate-x-1/2 rounded-full bg-blue-500/[0.035] blur-[100px]" />
+
+      {/* =========================================================
+          MAIN HERO
+      ========================================================= */}
+
+      <div className="relative z-10 mx-auto flex max-w-[1440px] flex-col items-center gap-16 px-6 pb-24 sm:px-8 lg:min-h-[calc(100vh-128px)] lg:flex-row lg:gap-12 lg:px-12 xl:px-16">
+        {/* =======================================================
+            LEFT CONTENT
+        ======================================================= */}
 
         <motion.div
-          initial={{
-            opacity: 0,
-            x: -60,
-          }}
-          animate={{
-            opacity: 1,
-            x: 0,
-          }}
-          transition={{
-            duration: 0.8,
-          }}
-          className="flex-1"
+          initial={{ opacity: 0, x: -35 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="w-full max-w-3xl flex-1 lg:pt-6"
         >
+          {/* Eyebrow */}
 
-          <div className="inline-flex items-center gap-3 rounded-full border border-blue-500/20 bg-blue-500/10 px-5 py-3">
-
-            <Sparkles
-              size={18}
-              className="text-blue-400"
-            />
-
-            <span className="text-sm font-medium text-blue-300">
-
-              India's Smart Vehicle Identity Network
-
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="inline-flex items-center gap-2.5 rounded-full border border-white/[0.09] bg-white/[0.035] px-4 py-2.5 backdrop-blur-xl"
+          >
+            <span className="flex h-2 w-2">
+              <span className="absolute h-2 w-2 animate-ping rounded-full bg-blue-400 opacity-50" />
+              <span className="relative h-2 w-2 rounded-full bg-blue-400" />
             </span>
 
-          </div>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/65 sm:text-xs">
+              Smart Vehicle Identity Network
+            </span>
+          </motion.div>
 
-          <h1 className="mt-8 text-5xl font-black leading-[1.05] md:text-7xl">
+          {/* Main Heading */}
 
-            Your Vehicle
-
+          <h1 className="mt-8 max-w-4xl text-[3.25rem] font-black leading-[0.98] tracking-[-0.045em] sm:text-6xl md:text-7xl xl:text-[5.8rem]">
+            Your vehicle.
             <br />
 
-            <span className="bg-gradient-to-r from-white via-blue-300 to-cyan-400 bg-clip-text text-transparent">
-
-              Deserves More
-
+            <span className="bg-gradient-to-r from-white via-white to-white/55 bg-clip-text text-transparent">
+              More than
             </span>
 
             <br />
 
-            Than Just A
-
-            <br />
-
-            Number Plate.
-
+            <span className="bg-gradient-to-r from-blue-300 via-cyan-300 to-white bg-clip-text text-transparent">
+              a number plate.
+            </span>
           </h1>
 
-          <p className="mt-8 max-w-2xl text-lg leading-9 text-zinc-400 md:text-xl">
+          {/* Description */}
 
-            Vehix transforms every vehicle into a secure digital identity.
-
-            Protect your ride, connect instantly with people who find it,
-
-            save parking locations, manage documents and access everything
-
-            from one premium platform.
-
+          <p className="mt-8 max-w-2xl text-base leading-7 text-white/50 sm:text-lg sm:leading-8">
+            Vehix gives your vehicle a secure digital identity — helping
+            people connect with you, access essential vehicle information,
+            find saved parking locations, and keep important documents
+            organized in one place.
           </p>
-                    {/* CTA Buttons */}
 
-          <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+          {/* CTA */}
 
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/register"
-              className="group inline-flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 px-8 py-5 text-lg font-bold shadow-2xl shadow-blue-600/30 transition duration-300 hover:scale-105 hover:shadow-blue-500/50"
+              href="/qr-store"
+              className="group inline-flex h-14 items-center justify-center gap-3 rounded-2xl bg-white px-7 text-sm font-bold text-[#030712] shadow-[0_12px_45px_rgba(255,255,255,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-[0_18px_55px_rgba(255,255,255,0.13)]"
             >
+              Get Your Vehix QR
 
-              Get Started Free
-
-              <ArrowRight
-                size={22}
-                className="transition group-hover:translate-x-1"
+              <ArrowUpRight
+                size={18}
+                strokeWidth={2.5}
+                className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
               />
-
             </Link>
 
             <Link
               href="#how-it-works"
-              className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-lg font-semibold backdrop-blur-xl transition hover:border-blue-500/40 hover:bg-white/10"
+              className="group inline-flex h-14 items-center justify-center gap-3 rounded-2xl border border-white/[0.1] bg-white/[0.025] px-7 text-sm font-semibold text-white/75 backdrop-blur-xl transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
             >
+              See How It Works
 
-              Watch Demo
-
+              <ArrowRight
+                size={17}
+                className="transition-transform duration-300 group-hover:translate-x-1"
+              />
             </Link>
-
           </div>
 
-          {/* Trust Row */}
+          {/* Trust Points */}
 
-          <div className="mt-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="mt-9 flex flex-wrap gap-x-6 gap-y-3">
+            <TrustPoint icon={<CheckCircle2 size={15} />}>
+              Easy setup
+            </TrustPoint>
 
-            <div>
+            <TrustPoint icon={<ShieldCheck size={15} />}>
+              Privacy focused
+            </TrustPoint>
 
-              <div className="flex items-center gap-1">
-
-                {Array.from({ length: 5 }).map((_, index) => (
-
-                  <Star
-                    key={index}
-                    size={18}
-                    className="fill-yellow-400 text-yellow-400"
-                  />
-
-                ))}
-
-              </div>
-
-              <p className="mt-3 text-zinc-400">
-
-                Trusted by
-
-                <span className="font-bold text-white">
-
-                  {" "}5,000+
-
-                </span>
-
-                {" "}vehicle owners across India.
-
-              </p>
-
-            </div>
-
-            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 px-6 py-4">
-
-              <div className="flex items-center gap-3">
-
-                <ShieldCheck
-                  className="text-blue-400"
-                  size={22}
-                />
-
-                <span className="font-semibold">
-
-                  Secure • Verified • Privacy First
-
-                </span>
-
-              </div>
-
-            </div>
-
+            <TrustPoint icon={<LockKeyhole size={15} />}>
+              Secure by design
+            </TrustPoint>
           </div>
 
-          {/* Premium Statistics */}
+          {/* =====================================================
+              MINI PRODUCT STRIP
+          ===================================================== */}
 
-          <div className="mt-14 grid grid-cols-2 gap-5 md:grid-cols-4">
+          <div className="mt-12 flex max-w-2xl flex-col gap-3 sm:flex-row">
+            <MiniFeature
+              icon={<PhoneCall size={17} />}
+              title="Connect"
+              description="Reach the owner"
+            />
 
-            <motion.div
-              whileHover={{
-                y: -6,
-              }}
-              className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl"
-            >
+            <MiniFeature
+              icon={<MapPin size={17} />}
+              title="Locate"
+              description="Save your parking"
+            />
 
-              <h3 className="text-4xl font-black text-blue-400">
-
-                5K+
-
-              </h3>
-
-              <p className="mt-2 text-sm text-zinc-400">
-
-                Protected Vehicles
-
-              </p>
-
-            </motion.div>
-
-            <motion.div
-              whileHover={{
-                y: -6,
-              }}
-              className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl"
-            >
-
-              <h3 className="text-4xl font-black text-cyan-400">
-
-                10K+
-
-              </h3>
-
-              <p className="mt-2 text-sm text-zinc-400">
-
-                QR Scans
-
-              </p>
-
-            </motion.div>
-
-            <motion.div
-              whileHover={{
-                y: -6,
-              }}
-              className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl"
-            >
-
-              <h3 className="text-4xl font-black text-green-400">
-
-                100%
-
-              </h3>
-
-              <p className="mt-2 text-sm text-zinc-400">
-
-                Secure Platform
-
-              </p>
-
-            </motion.div>
-
-            <motion.div
-              whileHover={{
-                y: -6,
-              }}
-              className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl"
-            >
-
-              <h3 className="text-4xl font-black text-purple-400">
-
-                24/7
-
-              </h3>
-
-              <p className="mt-2 text-sm text-zinc-400">
-
-                Emergency Ready
-
-              </p>
-
-            </motion.div>
-
+            <MiniFeature
+              icon={<FileText size={17} />}
+              title="Organize"
+              description="Keep documents"
+            />
           </div>
-
         </motion.div>
 
-        {/* RIGHT SIDE STARTS BELOW */}
-                <motion.div
-          initial={{
-            opacity: 0,
-            x: 60,
-          }}
-          animate={{
-            opacity: 1,
-            x: 0,
-          }}
-          transition={{
-            duration: 0.8,
-            delay: 0.2,
-          }}
-          className="relative flex flex-1 items-center justify-center"
+        {/* =======================================================
+            RIGHT PRODUCT VISUAL
+        ======================================================= */}
+
+        <motion.div
+          initial={{ opacity: 0, x: 45, scale: 0.96 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
+          className="relative flex w-full flex-1 items-center justify-center lg:max-w-[650px]"
         >
+          {/* Product glow */}
 
-          {/* Floating Glow */}
+          <div className="absolute h-[430px] w-[430px] rounded-full bg-blue-600/[0.13] blur-[120px]" />
 
-          <div className="absolute h-[520px] w-[520px] rounded-full bg-blue-600/20 blur-[140px]" />
+          <div className="absolute h-[240px] w-[240px] rounded-full bg-cyan-400/[0.08] blur-[90px]" />
 
-          {/* Floating Card */}
+          {/* =====================================================
+              MAIN VEHIX IDENTITY CARD
+          ===================================================== */}
 
           <motion.div
-            animate={{
-              y: [0, -18, 0],
+            animate={{ y: [0, -10, 0] }}
+            transition={{
+              duration: 6,
+              repeat: Infinity,
+              ease: "easeInOut",
             }}
+            className="relative w-full max-w-[500px]"
+          >
+            {/* Card outer glow */}
+
+            <div className="absolute -inset-[1px] rounded-[38px] bg-gradient-to-br from-white/[0.18] via-white/[0.04] to-blue-500/[0.15] opacity-80" />
+
+            {/* Main Card */}
+
+            <div className="relative overflow-hidden rounded-[38px] border border-white/[0.1] bg-[#0a101c]/90 p-5 shadow-[0_35px_100px_rgba(0,0,0,0.55)] backdrop-blur-3xl sm:p-7">
+              {/* Card light */}
+
+              <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-blue-500/[0.08] blur-[70px]" />
+
+              {/* Header */}
+
+              <div className="relative flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05]">
+                      <Car size={15} className="text-white/80" />
+                    </div>
+
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
+                      VEHIX IDENTITY
+                    </span>
+                  </div>
+
+                  <h2 className="mt-4 text-xl font-bold tracking-tight text-white sm:text-2xl">
+                    Your Vehicle
+                  </h2>
+                </div>
+
+                {/* Verified badge */}
+
+                <div className="flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.07] px-3 py-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
+
+                  <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-emerald-300">
+                    Active
+                  </span>
+                </div>
+              </div>
+
+              {/* QR Identity Area */}
+
+              <div className="relative mt-7 flex items-center gap-5 rounded-[28px] border border-white/[0.07] bg-black/20 p-5 sm:gap-7 sm:p-6">
+                {/* QR visual */}
+
+                <div className="relative shrink-0 rounded-2xl bg-white p-3 shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-4">
+                  <QrVisual />
+
+                  {/* Scan pulse */}
+
+                  <motion.div
+                    animate={{ top: ["8%", "88%", "8%"] }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    className="absolute left-[10%] right-[10%] h-[2px] rounded-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.9)]"
+                  />
+                </div>
+
+                {/* Identity details */}
+
+                <div className="min-w-0">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/30">
+                    Digital Vehicle Identity
+                  </p>
+
+                  <h3 className="mt-2 truncate text-lg font-bold text-white sm:text-xl">
+                    Connected & Protected
+                  </h3>
+
+                  <p className="mt-2 text-xs leading-5 text-white/40 sm:text-sm">
+                    One QR. One identity. Everything connected.
+                  </p>
+
+                  <div className="mt-4 flex items-center gap-2 text-[10px] font-medium text-emerald-300">
+                    <ShieldCheck size={14} />
+                    Privacy-first connection
+                  </div>
+                </div>
+              </div>
+
+              {/* Vehicle Information */}
+
+              <div className="relative mt-4 grid grid-cols-2 gap-3">
+                <IdentityTile
+                  icon={<PhoneCall size={16} />}
+                  label="Contact"
+                  value="Available"
+                />
+
+                <IdentityTile
+                  icon={<MapPin size={16} />}
+                  label="Parking"
+                  value="Saved"
+                />
+
+                <IdentityTile
+                  icon={<FileText size={16} />}
+                  label="Documents"
+                  value="Organized"
+                />
+
+                <IdentityTile
+                  icon={<Smartphone size={16} />}
+                  label="Access"
+                  value="Instant"
+                />
+              </div>
+
+              {/* Bottom identity bar */}
+
+              <div className="relative mt-4 flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.025] px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+
+                  <span className="text-[10px] font-medium text-white/40">
+                    VEHIX SMART VEHICLE ID
+                  </span>
+                </div>
+
+                <span className="text-[9px] font-bold tracking-[0.15em] text-white/20">
+                  VEHIX™
+                </span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* =====================================================
+              FLOATING SECURITY CARD
+          ===================================================== */}
+
+          <motion.div
+            animate={{ y: [0, -8, 0] }}
             transition={{
               duration: 5,
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            className="relative w-full max-w-md rounded-[36px] border border-white/10 bg-white/5 p-8 shadow-[0_0_70px_rgba(37,99,235,0.18)] backdrop-blur-3xl"
+            className="absolute -left-3 top-10 hidden rounded-2xl border border-white/[0.09] bg-[#0a101c]/90 p-4 shadow-2xl backdrop-blur-2xl xl:block"
           >
-
-            {/* Header */}
-
-            <div className="flex items-center justify-between">
-
-              <div>
-
-                <p className="text-sm text-zinc-400">
-
-                  VEHIX VERIFIED
-
-                </p>
-
-                <h3 className="mt-2 text-3xl font-black">
-
-                  MH 01 AB 1234
-
-                </h3>
-
-              </div>
-
-              <div className="rounded-full bg-green-500/20 px-4 py-2">
-
-                <span className="text-sm font-bold text-green-400">
-
-                  VERIFIED
-
-                </span>
-
-              </div>
-
-            </div>
-
-            {/* QR */}
-
-            <div className="mt-10 flex justify-center">
-
-              <div className="rounded-[28px] border border-white/10 bg-white p-8 shadow-2xl">
-
-                <QrCode
-                  size={180}
-                  className="text-black"
-                />
-
-              </div>
-
-            </div>
-
-            {/* Vehicle */}
-
-            <div className="mt-10 rounded-3xl bg-black/30 p-6">
-
-              <div className="flex items-center justify-between">
-
-                <div>
-
-                  <p className="text-sm text-zinc-500">
-
-                    Vehicle
-
-                  </p>
-
-                  <h3 className="mt-2 text-2xl font-bold">
-
-                    BMW M340i
-
-                  </h3>
-
-                </div>
-
-                <Car
-                  size={40}
-                  className="text-blue-400"
-                />
-
-              </div>
-
-            </div>
-
-            {/* Features */}
-
-            <div className="mt-8 grid gap-4">
-
-              <div className="flex items-center gap-4 rounded-2xl bg-white/5 p-4">
-
-                <CheckCircle2
-                  className="text-green-400"
-                  size={24}
-                />
-
-                <span>
-
-                  Owner Identity Verified
-
-                </span>
-
-              </div>
-
-              <div className="flex items-center gap-4 rounded-2xl bg-white/5 p-4">
-
-                <PhoneCall
-                  className="text-blue-400"
-                  size={24}
-                />
-
-                <span>
-
-                  Emergency Contact Available
-
-                </span>
-
-              </div>
-
-              <div className="flex items-center gap-4 rounded-2xl bg-white/5 p-4">
-
-                <MapPin
-                  className="text-green-400"
-                  size={24}
-                />
-
-                <span>
-
-                  Smart Parking Enabled
-
-                </span>
-
-              </div>
-
-            </div>
-
-          </motion.div>
-
-          {/* Floating Badge */}
-
-          <motion.div
-            animate={{
-              y: [0, -12, 0],
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-            }}
-            className="absolute -right-5 top-12 hidden rounded-3xl border border-white/10 bg-white/10 px-6 py-5 backdrop-blur-2xl lg:block"
-          >
-
-            <ShieldCheck
-              size={32}
-              className="mx-auto text-green-400"
-            />
-
-            <p className="mt-3 text-center text-sm font-semibold">
-
-              100% Verified
-
-            </p>
-
-          </motion.div>
-
-          {/* Floating Parking */}
-
-          <motion.div
-            animate={{
-              y: [0, 14, 0],
-            }}
-            transition={{
-              duration: 6,
-              repeat: Infinity,
-            }}
-            className="absolute -bottom-6 -left-6 hidden rounded-3xl border border-white/10 bg-white/10 px-6 py-5 backdrop-blur-2xl lg:block"
-          >
-
-            <div className="flex items-center gap-4">
-
-              <div className="rounded-2xl bg-green-500/20 p-3">
-
-                <MapPin
-                  size={24}
-                  className="text-green-400"
-                />
-
-              </div>
-
-              <div>
-
-                <p className="text-xs text-zinc-500">
-
-                  Latest Parking
-
-                </p>
-
-                <h4 className="font-bold">
-
-                  Saved Successfully
-
-                </h4>
-
-              </div>
-
-            </div>
-
-          </motion.div>
-                    {/* Floating QR Scan Badge */}
-
-          <motion.div
-            animate={{
-              y: [0, -8, 0],
-              rotate: [0, 2, 0],
-            }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-            }}
-            className="absolute left-2 top-24 hidden rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-2xl xl:block"
-          >
-
-            <div className="flex items-center gap-4">
-
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-500/20">
-
-                <QrCode
-                  className="text-cyan-400"
-                  size={28}
-                />
-
-              </div>
-
-              <div>
-
-                <p className="text-xs text-zinc-500">
-
-                  QR Scans
-
-                </p>
-
-                <h4 className="text-xl font-black">
-
-                  10,247
-
-                </h4>
-
-              </div>
-
-            </div>
-
-          </motion.div>
-
-
-
-
-
-          {/* Premium Review Card */}
-
-          <motion.div
-            animate={{
-              y: [0, 10, 0],
-            }}
-            transition={{
-              duration: 6,
-              repeat: Infinity,
-            }}
-            className="absolute -right-10 bottom-32 hidden w-72 rounded-3xl border border-white/10 bg-white/10 p-6 backdrop-blur-2xl xl:block"
-          >
-
-            <div className="flex items-center gap-1">
-
-              {Array.from({ length: 5 }).map((_, index) => (
-
-                <Star
-                  key={index}
-                  size={16}
-                  className="fill-yellow-400 text-yellow-400"
-                />
-
-              ))}
-
-            </div>
-
-            <p className="mt-5 leading-7 text-zinc-300">
-
-              "Finally a QR system that actually looks premium
-              and gives my customers confidence."
-
-            </p>
-
-            <div className="mt-6 flex items-center gap-4">
-
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 font-black">
-
-                DR
-
-              </div>
-
-              <div>
-
-                <h4 className="font-bold">
-
-                  Detailing Rocks
-
-                </h4>
-
-                <p className="text-sm text-zinc-500">
-
-                  Mumbai
-
-                </p>
-
-              </div>
-
-            </div>
-
-          </motion.div>
-
-
-
-
-
-          {/* Floating Features */}
-
-          <div className="absolute -bottom-16 left-1/2 hidden -translate-x-1/2 gap-4 lg:flex">
-
-            <motion.div
-              whileHover={{
-                y: -6,
-              }}
-              className="rounded-2xl border border-white/10 bg-white/10 px-6 py-4 backdrop-blur-xl"
-            >
-
-              <div className="flex items-center gap-3">
-
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/[0.08]">
                 <ShieldCheck
-                  className="text-green-400"
-                  size={22}
+                  size={20}
+                  className="text-emerald-400"
                 />
-
-                <span className="font-semibold">
-
-                  Privacy Protected
-
-                </span>
-
               </div>
 
-            </motion.div>
-
-            <motion.div
-              whileHover={{
-                y: -6,
-              }}
-              className="rounded-2xl border border-white/10 bg-white/10 px-6 py-4 backdrop-blur-xl"
-            >
-
-              <div className="flex items-center gap-3">
-
-                <MapPin
-                  className="text-green-400"
-                  size={22}
-                />
-
-                <span className="font-semibold">
-
-                  Smart Parking
-
-                </span>
-
-              </div>
-
-            </motion.div>
-
-            <motion.div
-              whileHover={{
-                y: -6,
-              }}
-              className="rounded-2xl border border-white/10 bg-white/10 px-6 py-4 backdrop-blur-xl"
-            >
-
-              <div className="flex items-center gap-3">
-
-                <PhoneCall
-                  className="text-blue-400"
-                  size={22}
-                />
-
-                <span className="font-semibold">
-
-                  Emergency Ready
-
-                </span>
-
-              </div>
-
-            </motion.div>
-
-          </div>
-
-        </motion.div>
-                  {/* Premium Trust Bar */}
-
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 30,
-            }}
-            whileInView={{
-              opacity: 1,
-              y: 0,
-            }}
-            viewport={{
-              once: true,
-            }}
-            transition={{
-              duration: 0.8,
-            }}
-            className="absolute -bottom-32 left-1/2 hidden w-[95%] max-w-6xl -translate-x-1/2 rounded-[34px] border border-white/10 bg-white/5 p-8 backdrop-blur-3xl xl:block"
-          >
-
-            <div className="grid grid-cols-4 gap-8">
-
-              <div className="text-center">
-
-                <h3 className="text-5xl font-black text-blue-400">
-
-                  5K+
-
-                </h3>
-
-                <p className="mt-3 text-zinc-400">
-
-                  Registered Vehicles
-
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.15em] text-white/25">
+                  Security
                 </p>
 
-              </div>
-
-              <div className="text-center">
-
-                <h3 className="text-5xl font-black text-cyan-400">
-
-                  10K+
-
-                </h3>
-
-                <p className="mt-3 text-zinc-400">
-
-                  Successful QR Scans
-
+                <p className="mt-1 text-xs font-bold text-white/80">
+                  Privacy First
                 </p>
-
               </div>
-
-              <div className="text-center">
-
-                <h3 className="text-5xl font-black text-green-400">
-
-                  100%
-
-                </h3>
-
-                <p className="mt-3 text-zinc-400">
-
-                  Secure Platform
-
-                </p>
-
-              </div>
-
-              <div className="text-center">
-
-                <h3 className="text-5xl font-black text-purple-400">
-
-                  24×7
-
-                </h3>
-
-                <p className="mt-3 text-zinc-400">
-
-                  Emergency Ready
-
-                </p>
-
-              </div>
-
             </div>
-
           </motion.div>
 
+          {/* =====================================================
+              FLOATING QR CARD
+          ===================================================== */}
+
+          <motion.div
+            animate={{ y: [0, 9, 0] }}
+            transition={{
+              duration: 5.5,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="absolute -right-3 bottom-16 hidden rounded-2xl border border-white/[0.09] bg-[#0a101c]/90 p-4 shadow-2xl backdrop-blur-2xl xl:block"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-400/[0.08]">
+                <QrCode size={20} className="text-blue-300" />
+              </div>
+
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.15em] text-white/25">
+                  One Scan
+                </p>
+
+                <p className="mt-1 text-xs font-bold text-white/80">
+                  Instant Connection
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
       </div>
 
-      {/* Scroll Indicator */}
+      {/* =========================================================
+          BOTTOM PRODUCT STATEMENT
+      ========================================================= */}
 
       <motion.div
-        animate={{
-          y: [0, 12, 0],
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-        }}
-        className="mt-24 flex flex-col items-center justify-center"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.7 }}
+        className="relative z-10 mx-auto max-w-[1440px] px-6 pb-10 sm:px-8 lg:px-12 xl:px-16"
       >
+        <div className="border-t border-white/[0.07] pt-7">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="max-w-xl text-xs leading-5 text-white/30 sm:text-sm">
+              Built to make vehicle ownership more connected, organized,
+              and easier to manage.
+            </p>
 
-        <p className="mb-4 text-sm tracking-[0.35em] text-zinc-500 uppercase">
+            <Link
+              href="#how-it-works"
+              className="group inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/45 transition-colors hover:text-white"
+            >
+              Explore Vehix
 
-          Scroll To Explore
+              <ArrowRight
+                size={14}
+                className="transition-transform duration-300 group-hover:translate-x-1"
+              />
+            </Link>
+          </div>
+        </div>
+      </motion.div>
 
-        </p>
+      {/* Scroll indicator */}
 
-        <div className="flex h-16 w-10 justify-center rounded-full border border-white/20">
-
-          <motion.div
-            animate={{
-              y: [0, 22, 0],
-            }}
+      <motion.div
+        animate={{ y: [0, 8, 0] }}
+        transition={{
+          duration: 2.2,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className="relative z-10 hidden justify-center pb-8 lg:flex"
+      >
+        <div className="flex h-10 w-6 items-start justify-center rounded-full border border-white/15 p-1.5">
+          <motion.span
+            animate={{ y: [0, 12, 0] }}
             transition={{
-              duration: 1.8,
+              duration: 1.6,
               repeat: Infinity,
             }}
-            className="mt-3 h-3 w-3 rounded-full bg-blue-500"
+            className="h-1.5 w-1.5 rounded-full bg-white/50"
           />
-
         </div>
-
       </motion.div>
-          </section>
+    </section>
+  );
+}
+
+/* =============================================================
+   SMALL COMPONENTS
+============================================================= */
+
+function TrustPoint({
+  icon,
+  children,
+}: {
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-xs font-medium text-white/40">
+      <span className="text-emerald-400">{icon}</span>
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function MiniFeature({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex flex-1 items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] px-4 py-3 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] hover:bg-white/[0.04]">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-white/60">
+        {icon}
+      </div>
+
+      <div className="min-w-0">
+        <p className="text-xs font-semibold text-white/75">
+          {title}
+        </p>
+
+        <p className="mt-0.5 truncate text-[10px] text-white/30">
+          {description}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function IdentityTile({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3.5">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.04] text-white/45">
+        {icon}
+      </div>
+
+      <div className="min-w-0">
+        <p className="text-[9px] uppercase tracking-[0.12em] text-white/25">
+          {label}
+        </p>
+
+        <p className="mt-1 text-xs font-semibold text-white/70">
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* =============================================================
+   QR VISUAL
+   Decorative only — NOT intended to be scanned.
+============================================================= */
+
+function QrVisual() {
+  const cells = [
+    "1111111001011111111",
+    "1000001010011000001",
+    "1011101011111011101",
+    "1011101001001011101",
+    "1011101110101011101",
+    "1000001001111000001",
+    "1111111010101111111",
+    "0000000011010000000",
+    "1101011110011011011",
+    "0011100101110100110",
+    "1110011110101111001",
+    "0101110011010010111",
+    "1011001110111101000",
+    "0000001011000101110",
+    "1111111010111010011",
+    "1000001111001011100",
+    "1011101010111110011",
+    "1011101101010010110",
+    "1011101001111101011",
+    "1000001110010011000",
+    "1111111011011101011",
+  ];
+
+  return (
+    <div className="grid grid-cols-[repeat(21,4px)] gap-[2px] sm:grid-cols-[repeat(21,5px)] sm:gap-[2px]">
+      {cells.map((row, rowIndex) =>
+        row.split("").map((cell, cellIndex) => (
+          <span
+            key={`${rowIndex}-${cellIndex}`}
+            className={`h-1 w-1 sm:h-[5px] sm:w-[5px] ${
+              cell === "1" ? "bg-black" : "bg-white"
+            }`}
+          />
+        ))
+      )}
+    </div>
   );
 }

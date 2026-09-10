@@ -89,6 +89,9 @@ export default function DocumentsPage() {
   const [deletingId, setDeletingId] =
     useState<string | null>(null);
 
+  const [replacingId, setReplacingId] =
+    useState<string | null>(null);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -132,19 +135,25 @@ export default function DocumentsPage() {
     setError("");
     setSuccess("");
 
-    const result =
-      await getVehicleDocuments(vehicleId);
+    try {
+      const result =
+        await getVehicleDocuments(vehicleId);
 
-    if (!result.success) {
+      if (!result.success) {
       setError(
         result.error ??
           "Failed to load documents."
       );
 
-      return;
-    }
+        return;
+      }
 
-    setDocuments(result.data ?? []);
+      setDocuments(result.data ?? []);
+    } catch (err) {
+      console.error(err);
+      setDocuments([]);
+      setError("Failed to load documents.");
+    }
   }
 
   useEffect(() => {
@@ -215,25 +224,57 @@ export default function DocumentsPage() {
       return;
     }
 
+    const existingDocument = documents.find(
+      (document) => document.document_type === documentType
+    );
+
+    const replacing = Boolean(existingDocument);
+
+    if (replacing) {
+      const confirmed = window.confirm(
+        `A ${getDocumentLabel(documentType)} document already exists. Replace it with the selected file?`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     try {
       setUploading(true);
+      setReplacingId(existingDocument?.id ?? null);
       setError("");
       setSuccess("");
 
-      const result =
-        await uploadVehicleDocument(
-          selectedVehicleId,
-          documentType,
-          selectedFile
-        );
+      const result = await uploadVehicleDocument(
+        selectedVehicleId,
+        documentType,
+        selectedFile
+      );
 
       if (!result.success) {
         setError(
           result.error ??
-            "Failed to upload document."
+            (replacing
+              ? "Failed to replace document."
+              : "Failed to upload document.")
         );
-
         return;
+      }
+
+      // Upload the replacement first. This keeps the old document intact
+      // if the new upload fails. Only remove the old record after the new
+      // document has been successfully created.
+      if (existingDocument) {
+        const deleteResult = await deleteVehicleDocument(existingDocument);
+
+        if (!deleteResult.success) {
+          await loadDocuments(selectedVehicleId);
+          setError(
+            "The new document was uploaded, but the previous document could not be removed. Please delete the older copy manually."
+          );
+          return;
+        }
       }
 
       setSelectedFile(null);
@@ -248,16 +289,22 @@ export default function DocumentsPage() {
       }
 
       setSuccess(
-        "Document uploaded successfully."
+        replacing
+          ? "Document replaced successfully."
+          : "Document uploaded successfully."
       );
 
       await loadDocuments(selectedVehicleId);
     } catch (err) {
       console.error(err);
-
-      setError("Failed to upload document.");
+      setError(
+        existingDocument
+          ? "Failed to replace document."
+          : "Failed to upload document."
+      );
     } finally {
       setUploading(false);
+      setReplacingId(null);
     }
   }
 
@@ -383,6 +430,10 @@ export default function DocumentsPage() {
       (vehicle) =>
         vehicle.id === selectedVehicleId
     ) ?? null;
+
+  const existingDocumentForSelectedType = documents.find(
+    (document) => document.document_type === documentType
+  );
 
   if (loading) {
     return (
@@ -608,8 +659,12 @@ export default function DocumentsPage() {
                     <Upload size={18} />
 
                     {uploading
-                      ? "Uploading..."
-                      : "Upload Document"}
+                      ? existingDocumentForSelectedType
+                        ? "Replacing..."
+                        : "Uploading..."
+                      : existingDocumentForSelectedType
+                        ? "Replace Document"
+                        : "Upload Document"}
                   </button>
                 </div>
               )}

@@ -488,11 +488,13 @@ export default function QRStorePage() {
                   <div className="hidden sm:block">
                     <StickerPreview
                       accent={product.accent}
-                      imageSrc={
-                        product.id === "basic"
-                          ? "/qr-designs/standard-qr.png"
-                          : undefined
-                      }
+                     imageSrc={
+  product.id === "basic"
+    ? "/qr-designs/standard-qr.png"
+    : product.id === "design"
+      ? "/qr-designs/design-qr.png"
+      : "/qr-store/custom.png"
+}
                     />
                   </div>
                 </div>

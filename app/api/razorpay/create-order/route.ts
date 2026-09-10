@@ -1,113 +1,75 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-/*
-|--------------------------------------------------------------------------
-| SERVER-ONLY SUPABASE CLIENT
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   SUPABASE ADMIN CLIENT
+   ========================================================= */
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-const supabaseServiceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-function getSupabaseAdmin() {
-  if (!supabaseUrl) {
-    throw new Error(
-      "NEXT_PUBLIC_SUPABASE_URL is missing from the server environment."
-    );
-  }
+const supabaseAdmin = createClient(
+  supabaseUrl!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-  if (!supabaseServiceRoleKey) {
-    throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY is missing from the server environment."
-    );
-  }
+/* =========================================================
+   PRODUCT PRICES
+   IMPORTANT:
+   These prices are calculated SERVER-SIDE.
+   Never trust the amount coming from the browser.
+   ========================================================= */
 
-  return createClient(
-    supabaseUrl,
-    supabaseServiceRoleKey,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| VEHIX PRODUCT PRICES
-|--------------------------------------------------------------------------
-|
-| Standard QR = ₹499
-|
-*/
-
-const PRODUCT_PRICES: Record<string, number> = {
+const productPrices: Record<string, number> = {
   basic: 499,
   standard: 499,
+  design: 599,
+  custom: 699,
 };
 
-/*
-|--------------------------------------------------------------------------
-| POST
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   POST
+   ========================================================= */
 
 export async function POST(req: Request) {
   try {
+    const authorization = req.headers.get("authorization");
+    if (!authorization) return NextResponse.json({ success: false, error: "You must be logged in." }, { status: 401 });
+    const accessToken = authorization.replace(/^Bearer\s+/i, "").trim();
+    if (!accessToken) return NextResponse.json({ success: false, error: "Invalid authentication token." }, { status: 401 });
+    const supabaseAuth = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+    if (!supabaseAuth) return NextResponse.json({ success: false, error: "Supabase authentication configuration is missing." }, { status: 500 });
+    const { data: { user: authenticatedUser }, error: authError } = await supabaseAuth.auth.getUser(accessToken);
+    if (authError || !authenticatedUser) return NextResponse.json({ success: false, error: "Your login session has expired. Please log in again." }, { status: 401 });
     const body = await req.json();
 
     const {
-      user_id,
+      user_id: requestedUserId,
       vehicle_id,
+
       product,
+      shape,
+      color,
+      finish,
+      quantity,
 
       customer,
       delivery,
-
-      full_name,
-      email,
-      phone,
-
-      address,
-      city,
-      state,
-      pincode,
-
-      quantity,
     } = body;
 
-    console.log("======================================");
-    console.log("VEHIX CREATE RAZORPAY ORDER");
-    console.log("user_id:", user_id || "MISSING");
-    console.log("vehicle_id:", vehicle_id || "MISSING");
-    console.log("product:", product || "MISSING");
-    console.log("======================================");
+    /* =====================================================
+       1. VALIDATE USER
+       ===================================================== */
 
-    /*
-    |--------------------------------------------------------------------------
-    | 1. VALIDATE USER
-    |--------------------------------------------------------------------------
-    */
-
-    if (!user_id) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "User is not logged in.",
-        },
-        { status: 401 }
-      );
+    if (requestedUserId && requestedUserId !== authenticatedUser.id) {
+      return NextResponse.json({ success: false, error: "Authenticated user does not match the order request." }, { status: 403 });
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 2. VALIDATE VEHICLE
-    |--------------------------------------------------------------------------
-    */
+    const authenticatedUserId = authenticatedUser.id;
+
+    /* =====================================================
+       2. VALIDATE VEHICLE
+       ===================================================== */
 
     if (!vehicle_id) {
       return NextResponse.json(
@@ -119,124 +81,79 @@ export async function POST(req: Request) {
       );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 3. VALIDATE PRODUCT
-    |--------------------------------------------------------------------------
-    */
+    /* =====================================================
+       3. VALIDATE PRODUCT
+       ===================================================== */
 
-    const selectedProduct =
-      typeof product === "string"
-        ? product.toLowerCase()
-        : "basic";
+    const normalizedProduct =
+      product === "basic" ? "standard" : product;
 
     if (
+      !normalizedProduct ||
       !Object.prototype.hasOwnProperty.call(
-        PRODUCT_PRICES,
-        selectedProduct
+        productPrices,
+        normalizedProduct
       )
     ) {
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid Vehix QR product.",
+          error: "Invalid QR product.",
         },
         { status: 400 }
       );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 4. CREATE SERVER SUPABASE CLIENT
-    |--------------------------------------------------------------------------
-    */
+    /* =====================================================
+       4. VALIDATE QUANTITY
+       ===================================================== */
 
-    let supabaseAdmin;
+    const parsedQuantity = Number(quantity);
 
-    try {
-      supabaseAdmin = getSupabaseAdmin();
-    } catch (error) {
-      console.error(
-        "Supabase configuration error:",
-        error instanceof Error
-          ? error.message
-          : error
-      );
-
+    if (
+      !Number.isFinite(parsedQuantity) ||
+      parsedQuantity < 1 ||
+      parsedQuantity > 20
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Supabase server configuration is missing or invalid.",
+          error: "Invalid quantity.",
         },
-        { status: 500 }
+        { status: 400 }
       );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 5. VERIFY VEHICLE
-    |--------------------------------------------------------------------------
-    */
+    const finalQuantity =
+      Math.floor(parsedQuantity);
 
-    const {
-      data: vehicle,
-      error: vehicleError,
-    } = await supabaseAdmin
-      .from("vehicles")
-      .select("id, user_id")
-      .eq("id", vehicle_id)
-      .maybeSingle();
+    /* =====================================================
+       5. VALIDATE VEHICLE BELONGS TO USER
+       ===================================================== */
+
+    const { data: vehicle, error: vehicleError } =
+      await supabaseAdmin
+        .from("vehicles")
+        .select("id, user_id")
+        .eq("id", vehicle_id)
+        .maybeSingle();
 
     if (vehicleError) {
       console.error(
-        "======================================"
-      );
-      console.error(
-        "SUPABASE VEHICLE LOOKUP FAILED"
-      );
-      console.error(
-        "message:",
-        vehicleError.message
-      );
-      console.error(
-        "details:",
-        vehicleError.details
-      );
-      console.error(
-        "hint:",
-        vehicleError.hint
-      );
-      console.error(
-        "code:",
-        vehicleError.code
-      );
-      console.error(
-        "======================================"
+        "Vehicle lookup error:",
+        vehicleError
       );
 
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Unable to verify vehicle. Please check the Supabase server key.",
+          error: "Unable to verify vehicle.",
         },
         { status: 500 }
       );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 6. VEHICLE NOT FOUND
-    |--------------------------------------------------------------------------
-    */
-
     if (!vehicle) {
-      console.error(
-        "Vehicle not found:",
-        vehicle_id
-      );
-
       return NextResponse.json(
         {
           success: false,
@@ -246,24 +163,9 @@ export async function POST(req: Request) {
       );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 7. VERIFY VEHICLE OWNERSHIP
-    |--------------------------------------------------------------------------
-    */
-
-     if (
-  vehicle.user_id &&
-  vehicle.user_id !== user_id
-) {
-      console.error(
-        "Vehicle ownership mismatch:",
-        {
-          vehicleOwner: vehicle.user_id,
-          requestedUser: user_id,
-        }
-      );
-
+    if (
+      vehicle.user_id !== authenticatedUserId
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -274,70 +176,55 @@ export async function POST(req: Request) {
       );
     }
 
+    /* =====================================================
+       6. CALCULATE PRICE SERVER-SIDE
+       ===================================================== */
+
+    const basePrice =
+      productPrices[normalizedProduct];
+
+    const selectedShape =
+      typeof shape === "string"
+        ? shape
+        : "Shield";
+
+    const selectedFinish =
+      typeof finish === "string"
+        ? finish
+        : "Matte";
+
     /*
-    |--------------------------------------------------------------------------
-    | 8. PRICE
-    |--------------------------------------------------------------------------
-    */
+     * Current Vehix launch product: Standard QR = ₹499.
+     * Shape/finish are retained as product metadata but do not
+     * change the launch price.
+     */
+    const unitPrice = basePrice;
+    const totalAmount = unitPrice * finalQuantity;
 
-    const unitPrice =
-      PRODUCT_PRICES[selectedProduct];
-
-    /*
-    |--------------------------------------------------------------------------
-    | 9. QUANTITY
-    |--------------------------------------------------------------------------
-    */
-
-    const requestedQuantity =
-      Number(quantity);
-
-    const finalQuantity =
-      Number.isFinite(requestedQuantity) &&
-      requestedQuantity >= 1
-        ? Math.floor(requestedQuantity)
-        : 1;
-
-    if (finalQuantity > 20) {
+    if (
+      !Number.isFinite(totalAmount) ||
+      totalAmount <= 0
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Maximum quantity allowed is 20.",
+          error: "Unable to calculate order amount.",
         },
         { status: 400 }
       );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 10. TOTAL
-    |--------------------------------------------------------------------------
-    */
+    /* =====================================================
+       7. RAZORPAY KEYS
+       ===================================================== */
 
-    const totalAmount =
-      unitPrice * finalQuantity;
+    const keyId =
+      process.env.RAZORPAY_KEY_ID;
 
-    /*
-    |--------------------------------------------------------------------------
-    | 11. RAZORPAY CONFIGURATION
-    |--------------------------------------------------------------------------
-    */
+    const keySecret =
+      process.env.RAZORPAY_KEY_SECRET;
 
-    const razorpayKeyId =
-      process.env.RAZORPAY_KEY_ID?.trim();
-
-    const razorpayKeySecret =
-      process.env.RAZORPAY_KEY_SECRET?.trim();
-
-    if (
-      !razorpayKeyId ||
-      !razorpayKeySecret
-    ) {
-      console.error(
-        "Razorpay environment variables are missing."
-      );
-
+    if (!keyId || !keySecret) {
       return NextResponse.json(
         {
           success: false,
@@ -348,41 +235,33 @@ export async function POST(req: Request) {
       );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 12. UNIQUE RECEIPT
-    |--------------------------------------------------------------------------
-    */
+    /* =====================================================
+       8. CREATE UNIQUE RECEIPT
+       ===================================================== */
 
     const receipt =
       `vehix_${Date.now()}_${Math.random()
         .toString(36)
         .substring(2, 8)}`;
 
-    /*
-    |--------------------------------------------------------------------------
-    | 13. CONVERT TO PAISE
-    |--------------------------------------------------------------------------
-    */
+    /* =====================================================
+       9. CONVERT INR → PAISE
+       ===================================================== */
 
     const amountInPaise =
       Math.round(totalAmount * 100);
 
-    /*
-    |--------------------------------------------------------------------------
-    | 14. RAZORPAY AUTH
-    |--------------------------------------------------------------------------
-    */
+    /* =====================================================
+       10. RAZORPAY BASIC AUTH
+       ===================================================== */
 
     const auth = Buffer.from(
-      `${razorpayKeyId}:${razorpayKeySecret}`
+      `${keyId}:${keySecret}`
     ).toString("base64");
 
-    /*
-    |--------------------------------------------------------------------------
-    | 15. CREATE RAZORPAY ORDER
-    |--------------------------------------------------------------------------
-    */
+    /* =====================================================
+       11. CREATE RAZORPAY ORDER
+       ===================================================== */
 
     const razorpayResponse =
       await fetch(
@@ -410,13 +289,22 @@ export async function POST(req: Request) {
                 "vehix_qr_store",
 
               user_id:
-                user_id,
+                authenticatedUserId,
 
               vehicle_id:
                 vehicle_id,
 
               product:
-                "Standard QR",
+                normalizedProduct,
+
+              shape:
+                selectedShape,
+
+              color:
+                color || "Black",
+
+              finish:
+                selectedFinish,
 
               quantity:
                 String(finalQuantity),
@@ -427,20 +315,12 @@ export async function POST(req: Request) {
         }
       );
 
-    /*
-    |--------------------------------------------------------------------------
-    | 16. READ RAZORPAY RESPONSE
-    |--------------------------------------------------------------------------
-    */
-
     const razorpayData =
       await razorpayResponse.json();
 
-    /*
-    |--------------------------------------------------------------------------
-    | 17. HANDLE RAZORPAY ERROR
-    |--------------------------------------------------------------------------
-    */
+    /* =====================================================
+       12. HANDLE RAZORPAY ERROR
+       ===================================================== */
 
     if (!razorpayResponse.ok) {
       console.error(
@@ -451,6 +331,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           success: false,
+
           error:
             razorpayData?.error
               ?.description ||
@@ -463,20 +344,16 @@ export async function POST(req: Request) {
       );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 18. SUCCESS
-    |--------------------------------------------------------------------------
-    */
-
-    console.log(
-      "Razorpay order created successfully:",
-      razorpayData.id
-    );
+    /* =====================================================
+       13. RETURN DATA TO PAYMENT PAGE
+       ===================================================== */
 
     return NextResponse.json({
       success: true,
 
+      /*
+       * Razorpay information
+       */
       razorpay_order_id:
         razorpayData.id,
 
@@ -486,17 +363,29 @@ export async function POST(req: Request) {
       currency:
         razorpayData.currency,
 
-      key:
-        razorpayKeyId,
+      /*
+       * Public Razorpay key
+       */
+      key: keyId,
 
+      /*
+       * Vehix order information
+       */
       receipt,
 
-      user_id,
+      user_id: authenticatedUserId,
 
       vehicle_id,
 
-      product:
-        "Standard QR",
+      product: normalizedProduct,
+
+      shape: selectedShape,
+
+      color:
+        color || "Black",
+
+      finish:
+        selectedFinish,
 
       quantity:
         finalQuantity,
@@ -508,50 +397,28 @@ export async function POST(req: Request) {
         totalAmount,
 
       customer:
-        customer || {
-          full_name:
-            full_name || "",
-          email:
-            email || "",
-          phone:
-            phone || "",
-        },
+        customer || null,
 
       delivery:
-        delivery || {
-          address:
-            address || "",
-          city:
-            city || "",
-          state:
-            state || "",
-          pincode:
-            pincode || "",
-        },
+        delivery || null,
 
+      /*
+       * Keep the complete Razorpay response
+       * available if we need it later.
+       */
       razorpay_order:
         razorpayData,
     });
   } catch (error) {
     console.error(
-      "======================================"
-    );
-
-    console.error(
-      "CREATE RAZORPAY ORDER ERROR"
-    );
-
-    console.error(
+      "Create Razorpay order error:",
       error
-    );
-
-    console.error(
-      "======================================"
     );
 
     return NextResponse.json(
       {
         success: false,
+
         error:
           error instanceof Error
             ? error.message

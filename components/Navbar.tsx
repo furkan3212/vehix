@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Menu, X, ArrowUpRight } from "lucide-react";
+
+const navItems = [
+  { label: "Features", href: "/#features" },
+  { label: "How It Works", href: "/#how-it-works" },
+  { label: "QR Store", href: "/qr-store" },
+  { label: "About", href: "/#about" },
+  { label: "Contact", href: "/#contact" },
+];
 
 export default function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -14,180 +21,185 @@ export default function Navbar() {
       setScrolled(window.scrollY > 20);
     };
 
-    window.addEventListener("scroll", handleScroll);
+    handleScroll();
 
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const links = [
-    {
-      title: "Features",
-      href: "/#features",
-    },
-    {
-      title: "How It Works",
-      href: "/#how-it-works",
-    },
-    {
-      title: "QR Store",
-      href: "/#qr-store",
-    },
-    {
-      title: "Pricing",
-      href: "/#pricing",
-    },
-    {
-      title: "Contact",
-      href: "/contact",
-    },
-  ];
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? "hidden" : "";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
+  const closeMenu = () => setIsOpen(false);
 
   return (
     <>
-      {/* NAVBAR */}
-      <motion.header
-        initial={{
-          y: -100,
-        }}
-        animate={{
-          y: 0,
-        }}
-        transition={{
-          duration: 0.6,
-        }}
-        className={`fixed left-0 top-0 z-50 w-full transition-all duration-300 ${
+      <header
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
           scrolled
-            ? "border-b border-white/10 bg-[#030712]/80 backdrop-blur-2xl"
-            : "bg-transparent"
+            ? "px-3 pt-3 sm:px-5"
+            : "px-0 pt-0"
         }`}
       >
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-
-          {/* VEHIX LOGO */}
+        <nav
+          className={`mx-auto flex h-[76px] max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-10 transition-all duration-500 ${
+            scrolled
+              ? "rounded-2xl border border-white/[0.08] bg-[#030712]/85 shadow-[0_18px_60px_rgba(0,0,0,0.35)] backdrop-blur-2xl"
+              : "border-b border-white/[0.06] bg-[#030712]/60 backdrop-blur-xl"
+          }`}
+        >
+          {/* Brand */}
           <Link
             href="/"
-            onClick={() => setMobileOpen(false)}
-            className="group flex items-center"
+            onClick={closeMenu}
+            className="group flex items-center gap-3"
+            aria-label="Vehix Home"
           >
-            <img
-              src="/logo/vehix-logo.svg"
-              alt="VEHIX - Smart Vehicle Identity"
-              className="h-[68px] w-auto object-contain transition duration-300 group-hover:scale-[1.02]"
-            />
+            <div className="relative flex h-10 w-10 items-center justify-center">
+              <div className="absolute inset-0 rounded-xl border border-white/15 bg-white/[0.04] transition-all duration-300 group-hover:border-white/30 group-hover:bg-white/[0.08]" />
+
+              <div className="relative flex h-8 w-8 items-center justify-center">
+                <span className="absolute left-[5px] top-[7px] h-[17px] w-[7px] -skew-x-[18deg] rounded-[2px] bg-white" />
+                <span className="absolute left-[13px] top-[7px] h-[17px] w-[7px] skew-x-[18deg] rounded-[2px] bg-white/70" />
+                <span className="absolute left-[10px] top-[13px] h-[5px] w-[10px] rotate-[0deg] rounded-sm bg-[#030712]" />
+              </div>
+            </div>
+
+            <div className="leading-none">
+              <div className="text-[19px] font-black tracking-[0.18em] text-white">
+                VEHIX<span className="text-white/40">™</span>
+              </div>
+              <div className="mt-1 hidden text-[7px] font-medium tracking-[0.25em] text-white/35 sm:block">
+                SMART VEHICLE IDENTITY
+              </div>
+            </div>
           </Link>
 
-          {/* DESKTOP MENU */}
-          <nav className="hidden items-center gap-10 lg:flex">
-            {links.map((link) => (
-              <Link
-                key={link.title}
-                href={link.href}
-                className="relative text-sm font-medium text-zinc-300 transition duration-300 hover:text-white"
-              >
-                {link.title}
-              </Link>
-            ))}
-          </nav>
+          {/* Desktop Navigation */}
+          <div className="hidden items-center lg:flex">
+            <div className="flex items-center gap-1 rounded-full border border-white/[0.06] bg-white/[0.025] p-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="group relative rounded-full px-4 py-2.5 text-[13px] font-medium text-white/60 transition-all duration-300 hover:bg-white/[0.06] hover:text-white"
+                >
+                  <span className="relative z-10">{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
 
-          {/* DESKTOP BUTTONS */}
-          <div className="hidden items-center gap-4 lg:flex">
+          {/* Desktop Actions */}
+          <div className="hidden items-center gap-3 lg:flex">
             <Link
               href="/login"
-              className="rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition duration-300 hover:border-blue-500/40 hover:bg-white/10"
+              className="px-3 py-2 text-[13px] font-medium text-white/60 transition-colors duration-300 hover:text-white"
             >
               Login
             </Link>
 
             <Link
-              href="/register"
-              className="group flex items-center gap-3 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition duration-300 hover:scale-105 hover:shadow-blue-500/50"
+              href="/qr-store"
+              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-white px-5 py-2.5 text-[13px] font-semibold text-[#030712] transition-all duration-300 hover:scale-[1.02] hover:bg-white/90"
             >
-              Get Started
+              <span>Get Started</span>
 
-              <ArrowRight
-                size={18}
-                className="transition duration-300 group-hover:translate-x-1"
+              <ArrowUpRight
+                size={15}
+                strokeWidth={2.5}
+                className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
               />
             </Link>
           </div>
 
-          {/* MOBILE MENU BUTTON */}
+          {/* Mobile Menu Button */}
           <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 transition hover:border-blue-500/40 hover:bg-white/10 lg:hidden"
-            aria-label="Toggle menu"
             type="button"
+            onClick={() => setIsOpen((value) => !value)}
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white transition-all duration-300 hover:bg-white/[0.08] lg:hidden"
+            aria-label={isOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isOpen}
           >
-            {mobileOpen ? (
-              <X size={24} />
-            ) : (
-              <Menu size={24} />
-            )}
+            {isOpen ? <X size={21} /> : <Menu size={21} />}
           </button>
-        </div>
-      </motion.header>
+        </nav>
+      </header>
 
-      {/* MOBILE MENU */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: -40,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            exit={{
-              opacity: 0,
-              y: -40,
-            }}
-            transition={{
-              duration: 0.3,
-            }}
-            className="fixed left-0 top-20 z-40 w-full border-t border-white/10 bg-black/95 backdrop-blur-3xl lg:hidden"
+      {/* Mobile Navigation */}
+      <div
+        className={`fixed inset-0 z-40 bg-[#030712]/95 backdrop-blur-2xl transition-all duration-500 lg:hidden ${
+          isOpen
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0"
+        }`}
+      >
+        <div className="flex min-h-full flex-col px-6 pb-8 pt-28">
+          {/* Mobile Links */}
+          <div className="flex flex-col">
+            {navItems.map((item, index) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={closeMenu}
+                className={`group flex items-center justify-between border-b border-white/[0.07] py-5 transition-all duration-500 ${
+                  isOpen
+                    ? "translate-y-0 opacity-100"
+                    : "translate-y-4 opacity-0"
+                }`}
+                style={{
+                  transitionDelay: `${index * 60}ms`,
+                }}
+              >
+                <span className="text-2xl font-medium tracking-tight text-white/80 transition-colors group-hover:text-white">
+                  {item.label}
+                </span>
+
+                <ArrowUpRight
+                  size={20}
+                  className="text-white/30 transition-all duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-white"
+                />
+              </Link>
+            ))}
+          </div>
+
+          {/* Mobile Actions */}
+          <div
+            className={`mt-auto space-y-3 transition-all duration-500 ${
+              isOpen
+                ? "translate-y-0 opacity-100"
+                : "translate-y-4 opacity-0"
+            }`}
+            style={{ transitionDelay: "300ms" }}
           >
-            <div className="space-y-2 px-6 py-8">
+            <Link
+              href="/login"
+              onClick={closeMenu}
+              className="flex h-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-semibold text-white transition-all hover:bg-white/[0.08]"
+            >
+              Login
+            </Link>
 
-              {/* MOBILE NAV LINKS */}
-              {links.map((link) => (
-                <Link
-                  key={link.title}
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="block rounded-2xl px-5 py-4 text-lg font-medium text-zinc-300 transition hover:bg-white/5 hover:text-white"
-                >
-                  {link.title}
-                </Link>
-              ))}
+            <Link
+              href="/qr-store"
+              onClick={closeMenu}
+              className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-bold text-[#030712] transition-all hover:bg-white/90"
+            >
+              Get Started
+              <ArrowUpRight size={17} strokeWidth={2.5} />
+            </Link>
 
-              {/* MOBILE BUTTONS */}
-              <div className="mt-8 space-y-4">
-
-                <Link
-                  href="/login"
-                  onClick={() => setMobileOpen(false)}
-                  className="block rounded-2xl border border-white/10 bg-white/5 py-4 text-center font-semibold text-white transition hover:bg-white/10"
-                >
-                  Login
-                </Link>
-
-                <Link
-                  href="/register"
-                  onClick={() => setMobileOpen(false)}
-                  className="block rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 py-4 text-center font-bold text-white shadow-lg shadow-blue-600/30 transition hover:scale-[1.02]"
-                >
-                  Get Started
-                </Link>
-
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <p className="pt-4 text-center text-[9px] font-medium tracking-[0.25em] text-white/25">
+              SMART VEHICLE IDENTITY NETWORK
+            </p>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

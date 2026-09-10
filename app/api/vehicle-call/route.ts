@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 /*
  * =========================================================
- * VEHIX → EXOTEL CALL API
+ * VEHIX → EXOTEL PRIVATE CALL API
  * =========================================================
  *
  * Flow:
@@ -12,67 +12,54 @@ import { createClient } from "@supabase/supabase-js";
  *        ↓
  * /api/vehicle-call
  *        ↓
- * Find QR
+ * Validate QR + vehicle + Contact Owner setting
  *        ↓
- * Find vehicle
+ * Exotel calls visitor first
  *        ↓
- * Find owner phone
+ * Visitor answers
  *        ↓
- * Exotel
+ * Exotel opens Vehix flow
  *        ↓
- * Vehix ExoPhone
+ * Connect applet calls /api/exotel/connect
  *        ↓
- * Owner
+ * QR resolves to owner number server-side
+ *        ↓
+ * Visitor ↔ Owner are connected
  *
  * IMPORTANT:
- * Exotel credentials remain server-side.
- * Never expose them to the browser.
+ * - Exotel credentials remain server-side.
+ * - Owner phone is never returned to the browser.
+ * - The browser only supplies the visitor's phone number.
  * =========================================================
  */
 
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-const supabaseServiceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const exotelApiKey =
-  process.env.EXOTEL_API_KEY;
-
-const exotelApiToken =
-  process.env.EXOTEL_API_TOKEN;
-
-const exotelAccountSid =
-  process.env.EXOTEL_ACCOUNT_SID;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const exotelApiKey = process.env.EXOTEL_API_KEY;
+const exotelApiToken = process.env.EXOTEL_API_TOKEN;
+const exotelAccountSid = process.env.EXOTEL_ACCOUNT_SID;
+const exotelFlowUrl =
+  process.env.EXOTEL_FLOW_URL ||
+  "https://my.exotel.com/flow-control/flow/1338353";
 
 if (!supabaseUrl) {
-  throw new Error(
-    "Missing NEXT_PUBLIC_SUPABASE_URL."
-  );
+  throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL.");
 }
 
 if (!supabaseServiceRoleKey) {
-  throw new Error(
-    "Missing SUPABASE_SERVICE_ROLE_KEY."
-  );
+  throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY.");
 }
 
 if (!exotelApiKey) {
-  throw new Error(
-    "Missing EXOTEL_API_KEY."
-  );
+  throw new Error("Missing EXOTEL_API_KEY.");
 }
 
 if (!exotelApiToken) {
-  throw new Error(
-    "Missing EXOTEL_API_TOKEN."
-  );
+  throw new Error("Missing EXOTEL_API_TOKEN.");
 }
 
 if (!exotelAccountSid) {
-  throw new Error(
-    "Missing EXOTEL_ACCOUNT_SID."
-  );
+  throw new Error("Missing EXOTEL_ACCOUNT_SID.");
 }
 
 const supabaseAdmin = createClient(
@@ -87,113 +74,50 @@ const supabaseAdmin = createClient(
 );
 
 /*
- * Your fixed Vehix ExoPhone.
- *
- * This is the number Zack should see as the
- * caller ID for Vehix calls.
- *
- * IMPORTANT:
- * Keep this value server-side.
+ * Vehix ExoPhone used as the caller ID.
+ * Keep this server-side.
  */
-
-const VEHIX_EXOTEL_NUMBER =
-  "09513886363";
+const VEHIX_EXOTEL_NUMBER = "09513886363";
 
 /*
  * Singapore Exotel cluster.
+ * If your Exotel account is on the Mumbai cluster,
+ * change this to https://api.in.exotel.com.
  */
-
-const EXOTEL_BASE_URL =
-  "https://api.exotel.com";
-
-/*
- * Normalize phone number.
- *
- * Exotel's documentation uses a leading 0 for
- * mobile numbers.
- *
- * Example:
- *
- * 9876543210
- *        ↓
- * 09876543210
- *
- * If the number is already formatted, we clean it.
- */
+const EXOTEL_BASE_URL = "https://api.exotel.com";
 
 function normalizeExotelPhone(
   phone: string | null | undefined
 ): string {
-  if (!phone) {
-    return "";
-  }
+  if (!phone) return "";
 
   let digits = phone.replace(/\D/g, "");
 
-  if (!digits) {
-    return "";
-  }
+  if (!digits) return "";
 
-  /*
-   * Indian international format:
-   *
-   * 919876543210
-   *       ↓
-   * 09876543210
-   */
-
-  if (
-    digits.length === 12 &&
-    digits.startsWith("91")
-  ) {
+  // +91XXXXXXXXXX / 91XXXXXXXXXX → 0XXXXXXXXXX
+  if (digits.length === 12 && digits.startsWith("91")) {
     digits = `0${digits.slice(2)}`;
   }
 
-  /*
-   * Indian number with leading zero.
-   */
-
-  if (
-    digits.length === 11 &&
-    digits.startsWith("0")
-  ) {
+  // Already in Exotel's Indian mobile format.
+  if (digits.length === 11 && digits.startsWith("0")) {
     return digits;
   }
 
-  /*
-   * Indian 10-digit mobile.
-   */
-
+  // Plain Indian 10-digit mobile number.
   if (digits.length === 10) {
     return `0${digits}`;
   }
 
-  /*
-   * For other supported international numbers,
-   * leave the cleaned number as-is.
-   */
-
   return digits;
 }
 
-/*
- * Parse Exotel response safely.
- *
- * Exotel can return XML or JSON depending on
- * endpoint/request format.
- */
-
-async function parseExotelResponse(
-  response: Response
-) {
-  const contentType =
-    response.headers.get("content-type") || "";
-
+async function parseExotelResponse(response: Response) {
+  const contentType = response.headers.get("content-type") || "";
   const text = await response.text();
 
-  if (
-    contentType.includes("application/json")
-  ) {
+  if (contentType.includes("application/json")) {
     try {
       return {
         type: "json",
@@ -216,34 +140,8 @@ async function parseExotelResponse(
   };
 }
 
-/*
- * =========================================================
- * POST
- * =========================================================
- *
- * Expected request:
- *
- * {
- *   "qr_code": "VH-05B103A9370B"
- * }
- *
- * We intentionally do NOT accept Zack's phone number
- * from the browser.
- *
- * The server finds the number itself.
- * =========================================================
- */
-
-export async function POST(
-  request: Request
-) {
+export async function POST(request: Request) {
   try {
-    /*
-     * -----------------------------------------------------
-     * 1. READ BODY
-     * -----------------------------------------------------
-     */
-
     let body: unknown;
 
     try {
@@ -254,9 +152,7 @@ export async function POST(
           success: false,
           error: "Invalid request body.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
@@ -270,23 +166,13 @@ export async function POST(
           success: false,
           error: "Invalid request body.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
-    const requestBody =
-      body as Record<string, unknown>;
-
-    const rawQrCode =
-      requestBody.qr_code;
-
-    /*
-     * -----------------------------------------------------
-     * 2. VALIDATE QR CODE
-     * -----------------------------------------------------
-     */
+    const requestBody = body as Record<string, unknown>;
+    const rawQrCode = requestBody.qr_code;
+    const rawCallerPhone = requestBody.caller_phone;
 
     if (
       typeof rawQrCode !== "string" ||
@@ -295,52 +181,57 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Vehix QR code is required.",
+          error: "Vehix QR code is required.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
-    const qrCode =
-      rawQrCode
-        .trim()
-        .toUpperCase();
+    if (
+      typeof rawCallerPhone !== "string" ||
+      !rawCallerPhone.trim()
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Your phone number is required to start the call.",
+        },
+        { status: 400 }
+      );
+    }
 
-    /*
-     * -----------------------------------------------------
-     * 3. FIND QR
-     * -----------------------------------------------------
-     */
+    const qrCode = rawQrCode.trim().toUpperCase();
+    const callerPhone = normalizeExotelPhone(rawCallerPhone);
 
-    const {
-      data: qr,
-      error: qrError,
-    } = await supabaseAdmin
+    if (!callerPhone) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Please enter a valid phone number.",
+        },
+        { status: 400 }
+      );
+    }
+
+    /* -----------------------------------------------------
+     * 1. VERIFY QR
+     * ----------------------------------------------------- */
+
+    const { data: qr, error: qrError } = await supabaseAdmin
       .from("qr_inventory")
-      .select(
-        "id, qr_code, status, vehicle_id"
-      )
+      .select("id, qr_code, status, vehicle_id")
       .eq("qr_code", qrCode)
       .maybeSingle();
 
     if (qrError) {
-      console.error(
-        "Vehix call QR lookup error:",
-        qrError
-      );
+      console.error("Vehix call QR lookup error:", qrError);
 
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Unable to verify this Vehix QR.",
+          error: "Unable to verify this Vehix QR.",
         },
-        {
-          status: 500,
-        }
+        { status: 500 }
       );
     }
 
@@ -348,78 +239,42 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          error:
-            "This Vehix QR code could not be found.",
+          error: "This Vehix QR code could not be found.",
         },
-        {
-          status: 404,
-        }
+        { status: 404 }
       );
     }
 
-    /*
-     * -----------------------------------------------------
-     * 4. QR MUST BE ACTIVATED
-     * -----------------------------------------------------
-     */
-
-    if (
-      String(qr.status).toLowerCase() !==
-      "activated"
-    ) {
+    if (String(qr.status).toLowerCase() !== "activated") {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "This Vehix QR is not activated.",
+          error: "This Vehix QR is not activated.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
-
-    /*
-     * -----------------------------------------------------
-     * 5. QR MUST HAVE VEHICLE
-     * -----------------------------------------------------
-     */
 
     if (!qr.vehicle_id) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "This Vehix QR is not linked to a vehicle.",
+          error: "This Vehix QR is not linked to a vehicle.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
-    /*
-     * -----------------------------------------------------
-     * 6. FIND VEHICLE
-     * -----------------------------------------------------
-     */
+    /* -----------------------------------------------------
+     * 2. VERIFY VEHICLE
+     * ----------------------------------------------------- */
 
-    const {
-      data: vehicle,
-      error: vehicleError,
-    } = await supabaseAdmin
-      .from("vehicles")
-      .select(
-        `
-          id,
-          user_id,
-          vehicle_number,
-          brand,
-          model
-        `
-      )
-      .eq("id", qr.vehicle_id)
-      .maybeSingle();
+    const { data: vehicle, error: vehicleError } =
+      await supabaseAdmin
+        .from("vehicles")
+        .select("id, user_id, vehicle_number, brand, model")
+        .eq("id", qr.vehicle_id)
+        .maybeSingle();
 
     if (vehicleError) {
       console.error(
@@ -430,12 +285,9 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Unable to verify the vehicle.",
+          error: "Unable to verify the vehicle.",
         },
-        {
-          status: 500,
-        }
+        { status: 500 }
       );
     }
 
@@ -443,245 +295,111 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          error:
-            "The vehicle linked to this QR could not be found.",
+          error: "The vehicle linked to this QR could not be found.",
         },
-        {
-          status: 404,
-        }
+        { status: 404 }
       );
     }
-
-    /*
-     * -----------------------------------------------------
-     * 7. FIND OWNER PHONE
-     * -----------------------------------------------------
-     *
-     * We use the existing profiles table server-side.
-     *
-     * The owner's number NEVER goes back to the browser.
-     * -----------------------------------------------------
-     */
 
     if (!vehicle.user_id) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "This vehicle does not have a registered owner.",
+          error: "This vehicle does not have a registered owner.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
-    const {
-      data: profile,
-      error: profileError,
-    } = await supabaseAdmin
-      .from("profiles")
-      .select("phone")
-      .eq("id", vehicle.user_id)
-      .maybeSingle();
+    /* -----------------------------------------------------
+     * 3. CONTACT OWNER MUST BE ENABLED
+     * ----------------------------------------------------- */
 
-    if (profileError) {
+    const { data: featureSettings, error: featureError } =
+      await supabaseAdmin
+        .from("vehicle_feature_settings")
+        .select("contact_owner")
+        .eq("vehicle_id", vehicle.id)
+        .maybeSingle();
+
+    if (featureError) {
       console.error(
-        "Vehix call owner lookup error:",
-        profileError
+        "Vehix call feature settings error:",
+        featureError
       );
 
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Unable to retrieve the vehicle owner's contact information.",
+          error: "Unable to verify private call settings.",
         },
-        {
-          status: 500,
-        }
+        { status: 500 }
       );
     }
 
-    if (!profile?.phone) {
+    if (
+      !featureSettings ||
+      featureSettings.contact_owner !== true
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "The vehicle owner has not configured a phone number.",
+          error: "The vehicle owner has disabled private calls.",
         },
-        {
-          status: 400,
-        }
+        { status: 403 }
       );
     }
 
-    /*
-     * -----------------------------------------------------
-     * 8. NORMALIZE OWNER NUMBER
-     * -----------------------------------------------------
-     */
-
-    const ownerPhone =
-      normalizeExotelPhone(
-        profile.phone
-      );
-
-    if (!ownerPhone) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "The vehicle owner's phone number is invalid.",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    /*
-     * -----------------------------------------------------
-     * 9. MAKE EXOTEL CALL
+    /* -----------------------------------------------------
+     * 4. START EXOTEL CALL
      * -----------------------------------------------------
      *
-     * Exotel's Connect API:
+     * Exotel's official Calls/connect API first calls the
+     * number supplied in From. Once that party answers,
+     * Exotel executes the configured flow.
      *
-     * From      = number called first
-     * To        = second number
-     * CallerId  = Vehix ExoPhone
-     *
-     * We call the OWNER first.
-     *
-     * Once the owner answers, Exotel connects the
-     * second leg to the caller.
-     *
-     * IMPORTANT:
-     *
-     * For the permanent Vehix-number architecture,
-     * the ExoPhone is used as CallerId.
-     * -----------------------------------------------------
-     */
+     * The QR code is carried in CustomField so the flow's
+     * Connect applet can call /api/exotel/connect and resolve
+     * the owner's number server-side.
+     * ----------------------------------------------------- */
 
     const exotelUrl =
-  `${EXOTEL_BASE_URL}/v1/Accounts/` +
-  `${encodeURIComponent(
-    exotelAccountSid!
-  )}/Calls/connect`;
+      `${EXOTEL_BASE_URL}/v1/Accounts/` +
+      `${encodeURIComponent(String(exotelAccountSid))}/Calls/connect`;
 
-    const params =
-      new URLSearchParams();
+    const params = new URLSearchParams();
 
-    /*
-     * First leg:
-     * Zack receives the call.
-     */
+    params.set("From", callerPhone);
+    params.set("CallerId", VEHIX_EXOTEL_NUMBER);
+    params.set("CallType", "trans");
+    params.set("Url", exotelFlowUrl);
+    params.set("CustomField", qrCode);
+    params.set("TimeOut", "45");
+    params.set("TimeLimit", "1800");
 
-    params.set(
-      "From",
-      ownerPhone
-    );
+    const basicAuth = Buffer.from(
+      `${exotelApiKey}:${exotelApiToken}`
+    ).toString("base64");
 
-    /*
-     * Second leg.
-     *
-     * This will be replaced/confirmed by Exotel's
-     * exact bridge behavior during the live test.
-     */
+    const exotelResponse = await fetch(exotelUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+      cache: "no-store",
+    });
 
-    params.set(
-      "To",
-      VEHIX_EXOTEL_NUMBER
-    );
-
-    /*
-     * Vehix public caller ID.
-     */
-
-    params.set(
-      "CallerId",
-      VEHIX_EXOTEL_NUMBER
-    );
-
-    /*
-     * Transactional call.
-     */
-
-    params.set(
-      "CallType",
-      "trans"
-    );
-
-    /*
-     * Reasonable ringing timeout.
-     */
-
-    params.set(
-      "TimeOut",
-      "30"
-    );
-
-    /*
-     * Maximum conversation duration:
-     * 30 minutes.
-     */
-
-    params.set(
-      "TimeLimit",
-      "1800"
-    );
-
-    const basicAuth =
-      Buffer.from(
-        `${exotelApiKey}:${exotelApiToken}`
-      ).toString("base64");
-
-    const exotelResponse =
-      await fetch(exotelUrl, {
-        method: "POST",
-
-        headers: {
-          Authorization:
-            `Basic ${basicAuth}`,
-
-          "Content-Type":
-            "application/x-www-form-urlencoded",
-        },
-
-        body:
-          params.toString(),
-
-        cache: "no-store",
-      });
-
-    /*
-     * -----------------------------------------------------
-     * 10. PARSE EXOTEL RESPONSE
-     * -----------------------------------------------------
-     */
-
-    const exotelResult =
-      await parseExotelResponse(
-        exotelResponse
-      );
-
-    /*
-     * -----------------------------------------------------
-     * 11. HANDLE EXOTEL FAILURE
-     * -----------------------------------------------------
-     */
+    const exotelResult = await parseExotelResponse(exotelResponse);
 
     if (!exotelResponse.ok) {
-      console.error(
-        "Vehix Exotel call error:",
-        {
-          status:
-            exotelResponse.status,
-
-          response:
-            exotelResult.raw,
-        }
-      );
+      console.error("Vehix Exotel call error:", {
+        status: exotelResponse.status,
+        response: exotelResult.raw,
+        qrCode,
+        vehicleId: vehicle.id,
+      });
 
       return NextResponse.json(
         {
@@ -689,73 +407,27 @@ export async function POST(
           error:
             "Vehix could not start the call. Please try again.",
         },
-        {
-          status: 502,
-        }
+        { status: 502 }
       );
     }
 
-    /*
-     * -----------------------------------------------------
-     * 12. SUCCESS
-     * -----------------------------------------------------
-     */
-
-    console.log(
-      "Vehix Exotel call started:",
-      {
-        qr_code: qrCode,
-
-        vehicle_id:
-          vehicle.id,
-
-        vehicle_number:
-          vehicle.vehicle_number,
-
-        exotel_number:
-          VEHIX_EXOTEL_NUMBER,
-
-        exotel_status:
-          exotelResponse.status,
-      }
-    );
+    console.info("Vehix Exotel call started:", {
+      qrCode,
+      vehicleId: vehicle.id,
+      exotelNumber: VEHIX_EXOTEL_NUMBER,
+      exotelStatus: exotelResponse.status,
+    });
 
     return NextResponse.json({
       success: true,
-
       message:
-        "Vehix is connecting the call.",
-
-      caller_id:
-        VEHIX_EXOTEL_NUMBER,
-
-      vehicle_id:
-        vehicle.id,
-
+        "Vehix is calling your number. Answer it to connect with the vehicle owner.",
+      caller_id: VEHIX_EXOTEL_NUMBER,
+      vehicle_id: vehicle.id,
       call_started: true,
-
-      /*
-       * We deliberately don't return the owner's
-       * phone number.
-       */
-
-      owner_phone:
-        undefined,
-
-      exotel_response:
-        exotelResult.data ?? null,
     });
   } catch (error) {
-    /*
-     * -----------------------------------------------------
-     * GLOBAL ERROR
-     * -----------------------------------------------------
-     */
-
-    console.error(
-      "Vehix vehicle-call API error:",
-      error
-    );
+    console.error("Vehix vehicle-call API error:", error);
 
     return NextResponse.json(
       {
@@ -763,28 +435,17 @@ export async function POST(
         error:
           "Something went wrong while starting the Vehix call.",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }
-
-/*
- * =========================================================
- * GET
- * =========================================================
- */
 
 export async function GET() {
   return NextResponse.json(
     {
       success: false,
-      error:
-        "This endpoint only accepts POST requests.",
+      error: "This endpoint only accepts POST requests.",
     },
-    {
-      status: 405,
-    }
+    { status: 405 }
   );
 }
