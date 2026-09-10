@@ -630,21 +630,15 @@ export default function QRVehiclePage() {
   }, [code]);
 
   const callOwner = () => {
-    const phone = normalizePhone(profile?.phone);
-
-    if (!phone) {
-      setActionState({
-        loading: false,
-        success: false,
-        error:
-          "The vehicle owner has not configured a phone number for calls yet.",
-      });
-      setSuccessAction("Call Owner");
-      setShowActionMessage(true);
-      return;
-    }
-
-    window.location.href = `tel:+${phone}`;
+    setSent(false);
+    setErrorMessage("");
+    setContactMode("call");
+    setReason("other");
+    setMessage(
+      "Please connect me directly with the vehicle owner regarding this vehicle."
+    );
+    setSenderContact("");
+    setShowContact(true);
   };
 
   const sendSMS = () => {
@@ -1325,7 +1319,7 @@ export default function QRVehiclePage() {
                 </h2>
 
                 <p className="mt-1 max-w-xl text-sm leading-5 text-zinc-500">
-                  Call the vehicle owner directly from your phone.
+                  Call the vehicle owner privately through Vehix without exposing their phone number.
                 </p>
               </div>
 
@@ -2067,7 +2061,7 @@ export default function QRVehiclePage() {
                   {contactMode === "menu"
                     ? "Contact Vehicle Owner"
                     : contactMode === "call"
-                      ? "Request a Private Call"
+                      ? "Call Vehicle Owner"
                       : contactMode === "whatsapp"
                         ? "Request WhatsApp Contact"
                         : contactMode === "emergency"
@@ -2079,7 +2073,7 @@ export default function QRVehiclePage() {
                   {contactMode === "menu"
                     ? "Choose a secure way to contact the vehicle owner. Their personal details remain hidden."
                     : contactMode === "call"
-                      ? "Request a private call without displaying the owner's phone number."
+                      ? "Enter your number and Vehix will call you first, then privately connect you to the vehicle owner."
                       : contactMode === "whatsapp"
                         ? "Request WhatsApp contact without displaying the owner's number."
                         : contactMode === "emergency"
@@ -2112,15 +2106,16 @@ export default function QRVehiclePage() {
                   {contactMode === "emergency"
                     ? "Emergency Alert Sent"
                     : contactMode === "call"
-                      ? "Call Request Sent"
+                      ? "Call Started"
                       : contactMode === "whatsapp"
                         ? "WhatsApp Request Sent"
                         : "Message Sent"}
                 </h3>
 
                 <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-zinc-500">
-                  Your request has been securely sent through Vehix.
-                  No private owner contact information was revealed.
+                  {contactMode === "call"
+                    ? "Vehix is calling your number first. Once you answer, the call will be privately connected to the vehicle owner."
+                    : "Your request has been securely sent through Vehix. No private owner contact information was revealed."}
                 </p>
 
                 <button
@@ -2159,7 +2154,7 @@ export default function QRVehiclePage() {
 
                 <button
                   type="button"
-                  onClick={() => openQuickRequest("call")}
+                  onClick={callOwner}
                   className="group flex w-full items-center gap-4 rounded-2xl border border-white/10 bg-black/20 p-4 text-left transition hover:border-blue-500/30 hover:bg-blue-500/5"
                 >
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10">
@@ -2171,10 +2166,10 @@ export default function QRVehiclePage() {
 
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-white">
-                      Request a Private Call
+                      Start Private Call
                     </p>
                     <p className="mt-1 text-xs leading-5 text-zinc-600">
-                      Ask the owner to contact you.
+                      Vehix will call you first and privately connect you to the owner.
                     </p>
                   </div>
 
@@ -2250,66 +2245,70 @@ export default function QRVehiclePage() {
                 onSubmit={handleContactSubmit}
                 className="space-y-5"
               >
-                <button
-                  type="button"
-                  onClick={backToContactMenu}
-                  disabled={sending}
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-500 transition hover:text-white disabled:opacity-50"
-                >
-                  ← Back to contact options
-                </button>
+                {contactMode !== "call" && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={backToContactMenu}
+                      disabled={sending}
+                      className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-500 transition hover:text-white disabled:opacity-50"
+                    >
+                      ← Back to contact options
+                    </button>
 
-                <div>
-                  <label className="mb-2 block text-sm font-semibold">
-                    Why are you contacting the owner?
-                  </label>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold">
+                        Why are you contacting the owner?
+                      </label>
 
-                  <select
-                    value={reason}
-                    onChange={(event) =>
-                      setReason(event.target.value)
-                    }
-                    disabled={
-                      sending ||
-                      contactMode !== "message"
-                    }
-                    className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white outline-none focus:border-red-500/50 disabled:opacity-70"
-                  >
-                    <option value="">
-                      Select a reason
-                    </option>
-
-                    {contactReasons.map((item) => (
-                      <option
-                        key={item.value}
-                        value={item.value}
+                      <select
+                        value={reason}
+                        onChange={(event) =>
+                          setReason(event.target.value)
+                        }
+                        disabled={
+                          sending ||
+                          contactMode !== "message"
+                        }
+                        className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white outline-none focus:border-red-500/50 disabled:opacity-70"
                       >
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                        <option value="">
+                          Select a reason
+                        </option>
 
-                <div>
-                  <label className="mb-2 block text-sm font-semibold">
-                    Your Name
-                    <span className="ml-2 text-xs font-normal text-zinc-600">
-                      Optional
-                    </span>
-                  </label>
+                        {contactReasons.map((item) => (
+                          <option
+                            key={item.value}
+                            value={item.value}
+                          >
+                            {item.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <input
-                    type="text"
-                    value={senderName}
-                    onChange={(event) =>
-                      setSenderName(event.target.value)
-                    }
-                    disabled={sending}
-                    maxLength={100}
-                    placeholder="Your name"
-                    className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-red-500/50"
-                  />
-                </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold">
+                        Your Name
+                        <span className="ml-2 text-xs font-normal text-zinc-600">
+                          Optional
+                        </span>
+                      </label>
+
+                      <input
+                        type="text"
+                        value={senderName}
+                        onChange={(event) =>
+                          setSenderName(event.target.value)
+                        }
+                        disabled={sending}
+                        maxLength={100}
+                        placeholder="Your name"
+                        className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-red-500/50"
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div>
                   <label className="mb-2 block text-sm font-semibold">
@@ -2344,7 +2343,7 @@ export default function QRVehiclePage() {
                   {contactMode === "call" && (
                     <p className="mt-2 text-xs leading-5 text-zinc-600">
                       Vehix will call this number first. After you answer,
-                      the secure call is connected to the vehicle owner.
+                      you will be privately connected to the vehicle owner.
                     </p>
                   )}
                 </div>
@@ -2413,8 +2412,8 @@ export default function QRVehiclePage() {
                   />
 
                   <p className="text-xs leading-5 text-zinc-500">
-                    Your request is sent through Vehix. The vehicle
-                    owner's private contact information is not displayed.
+                    Your number is used only to start the call. The vehicle
+                    owner's private number is never displayed to you.
                   </p>
                 </div>
 
@@ -2429,7 +2428,7 @@ export default function QRVehiclePage() {
                         size={19}
                         className="animate-pulse"
                       />
-                      Sending Securely...
+                      Starting Call...
                     </>
                   ) : (
                     <>
@@ -2437,7 +2436,7 @@ export default function QRVehiclePage() {
                       {contactMode === "emergency"
                         ? "Send Emergency Alert"
                         : contactMode === "call"
-                          ? "Call Vehicle Owner"
+                          ? "Start Call"
                           : contactMode === "whatsapp"
                             ? "Send WhatsApp Request"
                             : "Send Secure Message"}
